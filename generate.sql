@@ -2,6 +2,7 @@
 CREATE TYPE genero_enum AS ENUM ('M', 'F');
 CREATE TYPE tipo_usuario_enum AS ENUM ('Administrador', 'Comum', 'Hospede');
 CREATE TYPE funcao_enum AS ENUM ('Padre', 'Mãe');
+CREATE TYPE tipo_documento_enum AS ENUM ('CPF', 'ID Internacional');
 
 -- Extensão para geração de UUIDs aleatórios
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
@@ -10,8 +11,10 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE TABLE user_auth (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email VARCHAR(320) UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT now()
+  password varchar(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT now(),
+  -- Constraints
+  constraint valid_email CHECK (email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
 );
 
 -- Tabela de perfis
@@ -23,7 +26,7 @@ CREATE TABLE perfil (
   tipo_usuario tipo_usuario_enum,
   funcao funcao_enum,
   num_documento VARCHAR(20),
-  tipo_documento VARCHAR(20),
+  tipo_documento tipo_documento_enum,
   avatar_url TEXT,
   criado_em TIMESTAMP DEFAULT now()
 );
@@ -35,7 +38,7 @@ CREATE TABLE convidado (
   funcao VARCHAR(50),
   origem VARCHAR(100),
   anfitriao_id UUID REFERENCES perfil(user_id),
-  data DATE,
+  data DATE not null,
   criado_em TIMESTAMP DEFAULT now()
 );
 

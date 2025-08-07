@@ -1,26 +1,23 @@
 {
     "name": "piobrasileiro-backend",
     "version": "1.0.0",
-    "description": "Minimal Node.js and Express backend",
-    "main": "app.js",
+    "description": "Minimal Node.js and Express backend that uses PostgreSQL as database and JWT for authentication",
+    "main": "server.js",
+    "type": "module",
     "scripts": {
-        "start": "node app.js",
-        "dev": "nodemon app.js",
+        "start": "node src/server.js",
+        "dev": "node --watch --env-file=.env ./src/server.js",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "keywords": [],
-    "author": "",
+    "author": "Gabriel Fernandes Pereira",
     "license": "ISC",
     "dependencies": {
-        "bcrypt": "^6.0.0",
+        "bcryptjs": "^3.0.2",
         "cors": "^2.8.5",
-        "dotenv": "^17.2.1",
         "express": "^4.21.2",
         "jsonwebtoken": "^9.0.2",
         "pg": "^8.16.3",
         "postgres": "^3.4.7"
-    },
-    "devDependencies": {
-        "nodemon": "^3.1.10"
     }
 }
