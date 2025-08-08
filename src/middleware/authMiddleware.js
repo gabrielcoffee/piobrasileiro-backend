@@ -1,32 +1,30 @@
 import jwt from 'jsonwebtoken';
 
-function authMiddleware(req, res, next) {
+async function authMiddleware(req, res, next) {
+
+    // Get the token from the header (from client)
     const token = req.headers['authorization'];
 
     if (!token) {
         return res.status(401).json({
-            success: false,
             message: 'No token provided'
         })
     }
-
-    const result = pool.query("SELECT * from user_auth where email = $1", [email]);
-    if (result.rows.length == 0) {
-        res.status(401).json({
-            success: false,
-            message: "Invalid email"
-        })
-    }
-        
+    
+    // The request (still in the server) gets the id and role
+    // from the token verification, using the secret only the 
+    // server has access to.
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.userId = decoded.id;
+        req.userRole = decoded.role;
         next();
     } catch (error) {
         console.log(error);
         res.status(401).json({
-            success: false,
             message: "Invalid token"
         });
     }
 }
+
+export default authMiddleware;

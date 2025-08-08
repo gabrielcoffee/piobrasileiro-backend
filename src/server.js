@@ -1,21 +1,20 @@
 import express from 'express';
 import cors from 'cors';
 import authRoutes from './routes/authRoutes.js';
+import userRoutes from './routes/userRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 
 const app = express();  
 const PORT = process.env.PORT || 3003;
 
-// Middlewares
+// Initial Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
 // Routes
-app.get('/', (req, res) => {
-    console.log('Hello World');
-    res.send('Hello World');
-});
-
+app.use('/user', userRoutes);
+app.use('/admin', adminRoutes);
 app.use('/auth', authRoutes);
 
 app.listen(PORT, () => {
