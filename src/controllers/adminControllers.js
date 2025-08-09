@@ -38,10 +38,10 @@ export async function CreateUser(req, res) {
             [email, hashedPassword]
         );
 
-        // Sign the user token to return to the client
-        // Because the id itself is never send to the client
-        // Only the token is send so it can be verified later
-        // With the verification 
+        // Sign the token and return it to the client
+        // The id itself is never send to the client
+        // With the verification of the token, the id and role 
+        // are retrieved from the token
         const userId = result.rows[0].id;
         const userRole = result.rows[0].tipo_usuario;
 
@@ -68,76 +68,52 @@ export async function CreateUser(req, res) {
     }
 }
 
-export async function CreatePerfil(req, res) {
-
-    const { nome_completo, data_nasc, genero, tipo_usuario, funcao, num_documento, tipo_documento, avatar_url } = req.body;
+export async function activateUser(req, res) {
     const userId = req.userId;
-
-    if (!nome_completo || !tipo_usuario || !tipo_documento) {
-        return res.status(400).json({
-            message: 'Nome completo, tipo de usuário e tipo de documento são obrigatórios'
-        })
-    }
-
     const result = await pool.query(
-        `insert into perfil (user_id, nome_completo, data_nasc, genero, tipo_usuario, funcao,
-        num_documento, tipo_documento, avatar_url) values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning *`,
-        [userId, nome_completo, data_nasc, genero, tipo_usuario, funcao, num_documento, tipo_documento, avatar_url]
-    )
+        `UPDATE user_auth
+        SET active = TRUE
+        WHERE id = $1
+        RETURNING id, email`, 
+        [userId]
+    );
 
     if (result.rows.length === 0) {
-        return res.status(503).json({
-            message: 'Failed to create perfil'
-        })
+        return res.status(404).json({ message: 'User not found or already active' });
     }
 
-    res.status(201).json({
-        message: 'Perfil created successfully',
-        data: result.rows[0]
-    })
+    res.json({ message: "User activated successfully" })
 }
 
-export async function UpdatePerfil(req, res) {
-    const { nome_completo, data_nasc, genero, tipo_usuario, funcao, num_documento, tipo_documento, avatar_url } = req.body;
+export async function deactivateUser(req, res) {
     const userId = req.userId;
-
-    if (!nome_completo || !tipo_usuario || !tipo_documento) {
-        return res.status(400).json({
-            message: 'Nome completo, tipo de usuário e tipo de documento são obrigatórios'
-        })
-    }
-
+    
     const result = await pool.query(
-        `update perfil set nome_completo = $1, data_nasc = $2, genero = $3, tipo_usuario = $4, funcao = $5,
-         num_documento = $6, tipo_documento = $7, avatar_url = $8 where user_id = $9 returning *`,
-        [nome_completo, data_nasc, genero, tipo_usuario, funcao, num_documento, tipo_documento, avatar_url, userId]
-    )
-
+        `UPDATE user_auth 
+         SET active = FALSE 
+         WHERE id = $1 AND active = TRUE 
+         RETURNING id, email`,
+        [userId]
+    );
+    
     if (result.rows.length === 0) {
-        return res.status(503).json({
-            message: 'Failed to update perfil'
-        })
+        return res.status(404).json({ message: 'User not found or already inactive' });
     }
-
-    res.status(200).json({
-        message: 'Perfil updated successfully'
-    })
+    
+    res.json({ message: 'User deactivated successfully' });
 }
 
-export async function DeleteUser(req, res) {
-    const userId = req.userId;
+export async function deleteUser(req, res) {
+    const userId = req.params.userId;
 
-    const result = await pool.query('delete from user_auth where id = $1 returning *', [userId]);
+    const result = await pool.query(
+        `DELETE FROM user_auth WHERE id = $1`,
+        [userId]
+    );
 
-    // checks if there is a returned row (deleted)
-    if (result.rows.length === 0) {
-        res.status(404).json({
-            message: 'User not found'
-        })
+    if (result.rowCount === 0) {
+        return res.status(404).json({ message: 'User not found' });
     }
 
-    res.status(200).json({
-        message: 'User deleted successfully',
-        data: result.rows[0]
-    })
+    res.json({ message: 'User deleted successfully' });
 }

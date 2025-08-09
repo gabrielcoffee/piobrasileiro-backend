@@ -13,10 +13,10 @@ export async function LoginUser(req, res) {
 
     try {
         // Check if user on the database
-        const result = await pool.query(`select * from user_auth where email = $1`, [email])
+        const result = await pool.query(`SELECT * FROM user_auth WHERE email = $1 AND active = true`, [email])
         if (result.rows.length === 0) {
             return res.status(401).json({
-                message: 'No user found with this email'
+                message: 'No user found with this email or user is inactive'
             })
         }
 

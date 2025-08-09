@@ -10,7 +10,7 @@ const pool = new Pool({
 
 pool.on('connect', () => {
     console.log('Connected to the postgreSQL database');
-    console.log('conectando usuario:', process.env.DB_USER);
+    console.log('Connecting to db_user:', process.env.DB_USER);
 });
 
 pool.on('error', (err, client) => {
