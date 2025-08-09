@@ -4,7 +4,7 @@ CREATE TYPE tipo_usuario_enum AS ENUM ('admin', 'comum');
 CREATE TYPE tipo_documento_enum AS ENUM ('cpf', 'id_internacional');
 CREATE TYPE status_hospedagem_enum AS ENUM ('prevista', 'ativa', 'encerrada');
 CREATE TYPE status_quarto_enum AS ENUM ('disponivel', 'ocupado', 'manutencao');
-CREATE TYPE refeicao_tipo_enum AS ENUM ('usuario')
+CREATE TYPE refeicao_tipo_enum AS ENUM ('usuario', 'hospede', 'convidado');
 
 -- Extensão para geração de UUIDs aleatórios
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
