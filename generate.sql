@@ -16,7 +16,7 @@ CREATE TABLE user_auth (
   password varchar(255) NOT NULL,
   tipo_usuario tipo_usuario_enum default 'comum',
   active boolean default true,
-  created_at TIMESTAMP DEFAULT now(),
+  created_at TIMESTAMP DEFAULT now()
   -- Constraints
   constraint valid_email CHECK (email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
 );
@@ -44,13 +44,25 @@ CREATE TABLE solicitacao (
     num_pessoas int not null,
     visualizada boolean default false,
     criado_em TIMESTAMP DEFAULT now()
-)
+);
 
 CREATE TABLE quarto (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     numero varchar(10) not null,
     status_quarto status_quarto_enum default 'disponivel'
-)
+);
+
+
+CREATE TABLE hospede (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nome varchar(100) not null,
+    genero genero_enum not null,
+    tipo_documento tipo_documento_enum not null,
+    num_documento varchar(20) not null,
+    funcao varchar(100),
+    origem varchar(100),
+    criado_em TIMESTAMP DEFAULT now()
+);
 
 -- Tabela de hospedagem
 CREATE TABLE hospedagem (
@@ -61,6 +73,19 @@ CREATE TABLE hospedagem (
     data_saida DATE NOT NULL,
     quarto_id UUID NOT NULL REFERENCES quarto(id) ON DELETE CASCADE,
     status_hospedagem status_hospedagem_enum default 'prevista',
+    criado_em TIMESTAMP DEFAULT now()
+);
+
+
+
+-- Tabela de convidados
+CREATE TABLE convidado (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    anfitriao_id UUID REFERENCES perfil(user_id) ON DELETE CASCADE,
+    nome VARCHAR(100) NOT NULL,
+    funcao VARCHAR(50),
+    origem VARCHAR(100),
+    data DATE not null,
     criado_em TIMESTAMP DEFAULT now()
 );
 
@@ -86,27 +111,4 @@ CREATE TABLE refeicao (
         (tipo_pessoa = 'hospede' AND usuario_id IS NULL AND hospede_id IS NOT NULL AND convidado_id IS NULL) OR
         (tipo_pessoa = 'convidado' AND usuario_id IS NULL AND hospede_id IS NULL AND convidado_id IS NOT NULL)
     )
-);
-
-CREATE TABLE hospede (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    nome varchar(100) not null,
-    genero genero_enum not null,
-    tipo_documento tipo_documento_enum not null,
-    num_documento varchar(20) not null,
-    funcao varchar(100),
-    origem varchar(100),
-    criado_em TIMESTAMP DEFAULT now()
-)
-
--- Tabela de convidados
-CREATE TABLE convidado (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    anfitriao_id UUID REFERENCES perfil(user_id) ON DELETE CASCADE,
-    refeicao_id UUID references refeicao(id) ON DELETE CASCADE,
-    nome VARCHAR(100) NOT NULL,
-    funcao VARCHAR(50),
-    origem VARCHAR(100),
-    data DATE not null,
-    criado_em TIMESTAMP DEFAULT now()
 );
