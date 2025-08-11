@@ -3,7 +3,6 @@ CREATE TYPE genero_enum AS ENUM ('m', 'f');
 CREATE TYPE tipo_usuario_enum AS ENUM ('admin', 'comum');
 CREATE TYPE tipo_documento_enum AS ENUM ('cpf', 'id_internacional');
 CREATE TYPE status_hospedagem_enum AS ENUM ('prevista', 'ativa', 'encerrada');
-CREATE TYPE status_quarto_enum AS ENUM ('disponivel', 'ocupado', 'manutencao');
 CREATE TYPE refeicao_tipo_enum AS ENUM ('usuario', 'hospede', 'convidado');
 
 -- Extensão para geração de UUIDs aleatórios
@@ -49,7 +48,6 @@ CREATE TABLE solicitacao (
 CREATE TABLE quarto (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     numero varchar(10) not null,
-    status_quarto status_quarto_enum default 'disponivel'
 );
 
 
@@ -75,8 +73,6 @@ CREATE TABLE hospedagem (
     status_hospedagem status_hospedagem_enum default 'prevista',
     criado_em TIMESTAMP DEFAULT now()
 );
-
-
 
 -- Tabela de convidados
 CREATE TABLE convidado (
@@ -112,3 +108,64 @@ CREATE TABLE refeicao (
         (tipo_pessoa = 'convidado' AND usuario_id IS NULL AND hospede_id IS NULL AND convidado_id IS NOT NULL)
     )
 );
+
+-- Function to get the room availability for a given week
+-- First, create the occupied rooms table
+CREATE TABLE quarto_ocupado (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    quarto_id UUID REFERENCES quarto(id) ON DELETE CASCADE,
+    data DATE NOT NULL,
+    hospedagem_id UUID REFERENCES hospedagem(id) ON DELETE CASCADE,
+    UNIQUE(quarto_id, data)
+);
+
+-- Function to manage occupied room dates
+CREATE OR REPLACE FUNCTION manage_quarto_ocupado()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Handle INSERT (new reservation)
+    IF TG_OP = 'INSERT' THEN
+        -- Only insert if status is 'prevista' or 'ativa'
+        IF NEW.status_hospedagem IN ('prevista', 'ativa') THEN
+            INSERT INTO quarto_ocupado (quarto_id, data, hospedagem_id)
+            SELECT NEW.quarto_id, 
+                   date_series.data,
+                   NEW.id
+            FROM generate_series(NEW.data_chegada, NEW.data_saida - interval '1 day', interval '1 day') AS date_series(data)
+            ON CONFLICT (quarto_id, data) DO NOTHING;
+        END IF;
+        RETURN NEW;
+    END IF;
+    
+    -- Handle UPDATE (reservation changed)
+    IF TG_OP = 'UPDATE' THEN
+        -- First, remove old occupied dates for this reservation
+        DELETE FROM quarto_ocupado WHERE hospedagem_id = OLD.id;
+        
+        -- Then add new occupied dates if status is still active
+        IF NEW.status_hospedagem IN ('prevista', 'ativa') THEN
+            INSERT INTO quarto_ocupado (quarto_id, data, hospedagem_id)
+            SELECT NEW.quarto_id, 
+                   date_series.data,
+                   NEW.id
+            FROM generate_series(NEW.data_chegada, NEW.data_saida - interval '1 day', interval '1 day') AS date_series(data)
+            ON CONFLICT (quarto_id, data) DO NOTHING;
+        END IF;
+        RETURN NEW;
+    END IF;
+    
+    -- Handle DELETE (reservation cancelled)
+    IF TG_OP = 'DELETE' THEN
+        DELETE FROM quarto_ocupado WHERE hospedagem_id = OLD.id;
+        RETURN OLD;
+    END IF;
+    
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create the trigger
+CREATE TRIGGER hospedagem_ocupado_trigger
+    AFTER INSERT OR UPDATE OR DELETE ON hospedagem
+    FOR EACH ROW
+    EXECUTE FUNCTION manage_quarto_ocupado();
