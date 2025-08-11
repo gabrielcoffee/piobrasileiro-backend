@@ -1,7 +1,32 @@
 import express from 'express';
-import authMiddleware from '../middleware/authMiddleware';
-import adminMiddleware from '../middleware/adminMiddleware';
-import { createUserAndPerfil, activateUsers, deactivateUsers, deleteUsers, getUsersAndPerfil, getUserAndPerfil, updateUserAndPerfil } from '../controllers/adminControllers';
+import authMiddleware from '../middleware/authMiddleware.js';
+import adminMiddleware from '../middleware/adminMiddleware.js';
+import { 
+  createUserAndPerfil,
+  activateUsers,
+  deactivateUsers,
+  deleteUsers,
+  getUsersAndPerfil,
+  getUserAndPerfil,
+  updateUserAndPerfil,
+  getMeals,
+  getMeal,
+  createMeal,
+  updateMeal,
+  deleteMeal,
+  getAccommodations,
+  getAccommodation,
+  createAccommodation,
+  updateAccommodation,
+  deleteAccommodation,
+  getRooms,
+  getGuests,
+  createGuest,
+  updateGuest,
+  deleteGuest,
+  getRequests,
+  visualizeRequest
+} from '../controllers/adminControllers.js';
 
 const router = express.Router();
 
@@ -13,7 +38,7 @@ router.put('/users/:userId', authMiddleware, adminMiddleware, updateUserAndPerfi
 // Multiple users actions
 router.post('/activate_users', authMiddleware, adminMiddleware, activateUsers);
 router.post('/deactivate_users', authMiddleware, adminMiddleware, deactivateUsers);
-router.post('/users', authMiddleware, adminMiddleware, deleteUsers);
+router.delete('/users', authMiddleware, adminMiddleware, deleteUsers);
 
 // CRUD for refeicao
 router.get('/meals', authMiddleware, adminMiddleware, getMeals);

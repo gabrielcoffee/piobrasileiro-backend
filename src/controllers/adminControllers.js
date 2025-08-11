@@ -1,101 +1,7 @@
 import pool from '../db.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { calculatePagination } from '../utils.js';
-
-export async function createUser(req, res) {
-
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-        return res.status(400).json({
-            message: 'Email and password are required'
-        })
-    }
-
-    // Check if user already exists in the database
-    const existingUser = pool.query(
-        'SELECT * FROM user_auth WHERE email = $1',
-        [email]
-    );
-
-    if (existingUser.rows.length > 0) {
-        return res.status(409).json({
-            message: "Email already used"
-        })
-    }
-
-    const client = await pool.connect();
-
-    // Database query to insert user
-    try {
-        await client.query('BEGIN');
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Create a new user on the user_auth table
-        const result = await client.query(
-            `INSERT INTO user_auth (email, password) VALUES ($1, $2) returning id`,
-            [email, hashedPassword]
-        );
-
-        // Sign the token and return it to the client
-        // The id itself is never send to the client
-        // With the verification of the token, the id and role 
-        // are retrieved from the token
-        const userId = result.rows[0].id;
-        const userRole = result.rows[0].tipo_usuario;
-
-        // Sign a token with id and role for the user
-        const token = jwt.sign(
-            { id: userId, role: userRole },
-            process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRES_IN }
-        );
-
-        await client.query('COMMIT');
-
-        res.status(201).json({
-            message: 'User registered successfully',
-            token: token
-        });
-
-    } catch (error) {
-        await client.query('ROLLBACK');
-        console.log(error);
-        res.sendStatus(503);
-    } finally {
-        client.release();
-    }
-}
-
-export async function createPerfil(req, res) {
-    const { nome_completo, data_nasc, genero, funcao, num_documento, tipo_documento, avatar_url } = req.body;
-
-    if (!nome_completo || !data_nasc || !genero || !funcao || !num_documento || !tipo_documento) {
-        return res.status(400).json({ message: 'All fields are required' });
-    }
-
-    try {
-        const result = await pool.query(   
-            `INSERT INTO perfil (user_id, nome_completo, data_nasc, genero, funcao, num_documento, tipo_documento, avatar_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            RETURNING *`,
-            [req.params.userId, nome_completo, data_nasc, genero, funcao, num_documento, tipo_documento, avatar_url]
-        );
-    
-        if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'Failed to create perfil' });
-        }
-
-        res.status(201).json({
-            message: 'Perfil created successfully',
-            data: result.rows[0]
-        })
-    } catch (error) {
-        console.log(error);
-        res.sendStatus(503);
-    }
-}
+import { calculatePagination, getCurrentWeekDates } from '../utils.js';
 
 export async function createUserAndPerfil(req, res) {
     const {
@@ -194,30 +100,17 @@ export async function createUserAndPerfil(req, res) {
 
 export async function getUsersAndPerfil(req, res) {
 
-    const limit = 8;
-    const page = req.query.page;
-
-    const countResult = await pool.query('SELECT COUNT(*) FROM user_auth WHERE active = TRUE');
-    const totalUsers = parseInt(countResult.rows[0].count);
-
-    const pagination = calculatePagination(
-        totalItems = totalUsers,
-        currentPage = page,
-        itemsPerPage = limit
-    );
-
     try {
 
         const query = `
-            SELECT p.nome_completo, ua.tipo_usuario, p.funcao, p.data_nasc, ua.email
+            SELECT p.*, ua.email, ua.tipo_usuario, ua.active
             FROM user_auth ua
-            JOIN perfil p ON perfil.user_id = user_auth.id
-            LIMIT $1 OFFSET $2
+            JOIN perfil p ON p.user_id = ua.id
+            ORDER BY ua.criado_em DESC
         `;
 
         const result = await pool.query(
-            query, 
-            [pagination.page, pagination.offset]
+            query,
         );
 
         if (result.rows.length === 0){
@@ -228,7 +121,7 @@ export async function getUsersAndPerfil(req, res) {
 
         res.status(200).json({
             message: "Successfully fetched users",
-            data: result.rows,
+            data: result.rows
         })
 
     } catch (error) {
@@ -244,11 +137,13 @@ export async function getUserAndPerfil(req, res) {
 
     try {
         const result = await pool.query(
-            `SELECT ua.email, ua.tipo_usuario, p.nome_completo, p.funcao, p.data_nasc, p.genero, p.num_documento, p.tipo_documento, p.avatar_url
+            `
+            SELECT p.*, ua.active, ua.email, ua.tipo_usuario
             FROM user_auth ua
             JOIN perfil p ON p.user_id = ua.id
             WHERE ua.id = $1
-            AND active = TRUE`,
+            AND active = TRUE
+            `,
             [userId]
         );
 
@@ -392,5 +287,409 @@ export async function deleteUsers(req, res) {
         res.status(403).json({
             message: "There was an error deleting the users"
         })
+    }
+}
+
+
+
+
+// GPT WROTE THIS CODE BELOW:
+
+
+
+// MEALS (refeicao)
+export async function getMeals(req, res) {
+
+    const { monday, sunday } = getCurrentWeekDates();
+
+    try {
+
+        const query = `
+        SELECT * FROM refeicao 
+        WHERE data >= $1 
+        AND data <= $2
+        ORDER BY data ASC
+        `;
+
+        const result = await pool.query(query, [monday, sunday]);
+
+        if (result.rows.length === 0){
+            return res.status(404).json({
+                message: "No meals found"
+            })
+        }
+
+        res.status(200).json({
+            message: "Successfully fetched meals",
+            data: result.rows,
+            fromDate: monday,
+            toDate: sunday
+        })
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to fetch meals' });
+    }
+}
+
+export async function getMeal(req, res) {
+    const { mealId } = req.params;
+    try {
+        const result = await pool.query(`SELECT * FROM refeicao WHERE id = $1`, [mealId]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Meal not found' });
+        }
+        res.status(200).json({ message: 'Meal fetched successfully', data: result.rows[0] });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to fetch meal' });
+    }
+}
+
+export async function createMeal(req, res) {
+    const {
+        tipo_pessoa,
+        usuario_id,
+        hospede_id,
+        convidado_id,
+        data,
+        almoco_colegio,
+        almoco_levar,
+        janta_colegio,
+        observacoes,
+    } = req.body;
+
+    if (!tipo_pessoa || !data) {
+        return res.status(400).json({ message: 'tipo_pessoa and data are required' });
+    }
+
+    const hasUsuario = Boolean(usuario_id);
+    const hasHospede = Boolean(hospede_id);
+    const hasConvidado = Boolean(convidado_id);
+    const associationsCount = [hasUsuario, hasHospede, hasConvidado].filter(Boolean).length;
+    if (associationsCount !== 1) {
+        return res.status(400).json({ message: 'Provide exactly one of usuario_id, hospede_id, convidado_id' });
+    }
+
+    try {
+        const result = await pool.query(
+            `INSERT INTO refeicao (
+                tipo_pessoa, usuario_id, hospede_id, convidado_id,
+                data, almoco_colegio, almoco_levar, janta_colegio, observacoes
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            RETURNING *`,
+            [
+                tipo_pessoa,
+                usuario_id || null,
+                hospede_id || null,
+                convidado_id || null,
+                data,
+                Boolean(almoco_colegio),
+                Boolean(almoco_levar),
+                Boolean(janta_colegio),
+                observacoes || null,
+            ]
+        );
+
+        res.status(201).json({ message: 'Meal created successfully', data: result.rows[0] });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to create meal' });
+    }
+}
+
+export async function updateMeal(req, res) {
+    const { mealId } = req.params;
+    const { almoco_colegio, almoco_levar, janta_colegio, observacoes } = req.body;
+
+    try {
+        const result = await pool.query(
+            `UPDATE refeicao
+             SET almoco_colegio = COALESCE($1, almoco_colegio),
+                 almoco_levar = COALESCE($2, almoco_levar),
+                 janta_colegio = COALESCE($3, janta_colegio),
+                 observacoes = COALESCE($4, observacoes)
+             WHERE id = $5
+             RETURNING *`,
+            [
+                typeof almoco_colegio === 'boolean' ? almoco_colegio : null,
+                typeof almoco_levar === 'boolean' ? almoco_levar : null,
+                typeof janta_colegio === 'boolean' ? janta_colegio : null,
+                observacoes ?? null,
+                mealId,
+            ]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Meal not found' });
+        }
+
+        res.status(200).json({ message: 'Meal updated successfully', data: result.rows[0] });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to update meal' });
+    }
+}
+
+export async function deleteMeal(req, res) {
+    const { mealId } = req.params;
+    try {
+        const result = await pool.query(`DELETE FROM refeicao WHERE id = $1 RETURNING *`, [mealId]);
+        if (result.rowCount === 0) {
+            return res.status(404).json({ message: 'Meal not found' });
+        }
+        res.status(200).json({ message: 'Meal deleted successfully', data: result.rows[0] });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to delete meal' });
+    }
+}
+
+// ACCOMMODATIONS (hospedagem)
+export async function getAccommodations(req, res) {
+
+    const { startDate, endDate } = req.query;
+
+    const { monday, sunday } = getCurrentWeekDates();
+
+
+    try {
+
+        const query = `
+        SELECT * FROM hospedagem
+        WHERE data_chegada >= $1
+        AND data_saida <= $2
+        ORDER BY data_chegada ASC
+        `
+
+        const result = await pool.query(
+            query,
+            [startDate || monday, endDate || sunday]);
+
+        if (result.rows.length === 0){
+            return res.status(404).json({
+                message: "No accommodations found"
+            })
+        }
+        res.status(200).json({ message: 'Accommodations fetched successfully', data: result.rows, fromDate: monday, toDate: sunday });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to fetch accommodations' });
+    }
+}
+
+export async function getAccommodation(req, res) {
+    const { accommodationId } = req.params;
+    
+    try {
+        const result = await pool.query(`SELECT * FROM hospedagem WHERE id = $1`, [accommodationId]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Accommodation not found' });
+        }
+        res.status(200).json({ message: 'Accommodation fetched successfully', data: result.rows[0] });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to fetch accommodation' });
+    }
+}
+
+export async function createAccommodation(req, res) {
+    const { anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, status_hospedagem } = req.body;
+
+    if (!anfitriao_id || !hospede_id || !data_chegada || !data_saida || !quarto_id) {
+        return res.status(400).json({ message: 'anfitriao_id, hospede_id, data_chegada, data_saida and quarto_id are required' });
+    }
+
+    try {
+        const result = await pool.query(
+            `INSERT INTO hospedagem (anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, status_hospedagem)
+             VALUES ($1, $2, $3, $4, $5, COALESCE($6, 'prevista'))
+             RETURNING *`,
+            [anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, status_hospedagem || null]
+        );
+
+        res.status(201).json({ message: 'Accommodation created successfully', data: result.rows[0] });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to create accommodation' });
+    }
+}
+
+export async function updateAccommodation(req, res) {
+    const { accommodationId } = req.params;
+    const { data_chegada, data_saida, quarto_id, status_hospedagem } = req.body;
+
+    try {
+        const result = await pool.query(
+            `UPDATE hospedagem
+             SET data_chegada = COALESCE($1, data_chegada),
+                 data_saida = COALESCE($2, data_saida),
+                 quarto_id = COALESCE($3, quarto_id),
+                 status_hospedagem = COALESCE($4, status_hospedagem)
+             WHERE id = $5
+             RETURNING *`,
+            [data_chegada || null, data_saida || null, quarto_id || null, status_hospedagem || null, accommodationId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Accommodation not found' });
+        }
+
+        res.status(200).json({ message: 'Accommodation updated successfully', data: result.rows[0] });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to update accommodation' });
+    }
+}
+
+export async function deleteAccommodation(req, res) {
+    const { accommodationId } = req.params;
+    try {
+        const result = await pool.query(`DELETE FROM hospedagem WHERE id = $1 RETURNING *`, [accommodationId]);
+        if (result.rowCount === 0) {
+            return res.status(404).json({ message: 'Accommodation not found' });
+        }
+        res.status(200).json({ message: 'Accommodation deleted successfully', data: result.rows[0] });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to delete accommodation' });
+    }
+}
+
+// ROOMS (quarto)
+export async function getRooms(req, res) {
+
+    const { startDate, endDate } = req.query;
+
+    const { monday, sunday } = getCurrentWeekDates();
+
+    try {
+
+        // Get all rooms for the week returning a variable if they are available or not on each day
+
+        const query = `
+        SELECT * FROM quarto_ocupado
+        JOIN quarto on quarto.id = quarto_ocupado.quarto_id
+        WHERE data >= $1
+        AND data <= $2
+        ORDER BY quarto.numero ASC
+        `
+        const result = await pool.query(
+            query,
+            [startDate || monday, endDate || sunday]
+        );
+
+        if (result.rows.length === 0){
+            return res.status(404).json({
+                message: "No rooms found"
+            })
+        }
+        res.status(200).json({
+            message: 'Rooms fetched successfully',
+            data: result.rows
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to fetch rooms' });
+    }
+}
+
+// GUESTS (hospede)
+export async function getGuests(req, res) {
+    try {
+        const result = await pool.query(`SELECT * FROM hospede ORDER BY criado_em DESC`);
+        res.status(200).json({ message: 'Guests fetched successfully', data: result.rows });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to fetch guests' });
+    }
+}
+
+export async function createGuest(req, res) {
+    const { nome, genero, tipo_documento, num_documento, funcao, origem } = req.body;
+
+    if (!nome || !genero || !tipo_documento || !num_documento) {
+        return res.status(400).json({ message: 'nome, genero, tipo_documento and num_documento are required' });
+    }
+
+    try {
+        const result = await pool.query(
+            `INSERT INTO hospede (nome, genero, tipo_documento, num_documento, funcao, origem)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             RETURNING *`,
+            [nome, genero, tipo_documento, num_documento, funcao || null, origem || null]
+        );
+
+        res.status(201).json({ message: 'Guest created successfully', data: result.rows[0] });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to create guest' });
+    }
+}
+
+export async function updateGuest(req, res) {
+    const { guestId } = req.params;
+    const { nome, genero, tipo_documento, num_documento, funcao, origem } = req.body;
+
+    try {
+        const result = await pool.query(
+            `UPDATE hospede
+             SET nome = COALESCE($1, nome),
+                 genero = COALESCE($2, genero),
+                 tipo_documento = COALESCE($3, tipo_documento),
+                 num_documento = COALESCE($4, num_documento),
+                 funcao = COALESCE($5, funcao),
+                 origem = COALESCE($6, origem)
+             WHERE id = $7
+             RETURNING *`,
+            [nome || null, genero || null, tipo_documento || null, num_documento || null, funcao || null, origem || null, guestId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Guest not found' });
+        }
+
+        res.status(200).json({ message: 'Guest updated successfully', data: result.rows[0] });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to update guest' });
+    }
+}
+
+export async function deleteGuest(req, res) {
+    const { guestId } = req.params;
+    try {
+        const result = await pool.query(`DELETE FROM hospede WHERE id = $1 RETURNING *`, [guestId]);
+        if (result.rowCount === 0) {
+            return res.status(404).json({ message: 'Guest not found' });
+        }
+        res.status(200).json({ message: 'Guest deleted successfully', data: result.rows[0] });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to delete guest' });
+    }
+}
+
+// REQUESTS (solicitacao)
+export async function getRequests(req, res) {
+    try {
+        const result = await pool.query(`SELECT * FROM solicitacao ORDER BY criado_em DESC`);
+        res.status(200).json({ message: 'Requests fetched successfully', data: result.rows });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to fetch requests' });
+    }
+}
+
+export async function visualizeRequest(req, res) {
+    const { requestId } = req.params;
+    try {
+        const result = await pool.query(`UPDATE solicitacao SET visualizada = TRUE WHERE id = $1 RETURNING *`, [requestId]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Request not found' });
+        }
+        res.status(200).json({ message: 'Request visualized successfully', data: result.rows[0] });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to visualize request' });
     }
 }
