@@ -1,7 +1,7 @@
 import pool from '../db.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { calculatePagination, getCurrentWeekDates } from '../utils.js';
+import { calculatePagination, getCurrentWeekDates, isPasswordValid } from '../utils.js';
 
 export async function createUserAndPerfil(req, res) {
     const {
@@ -25,6 +25,12 @@ export async function createUserAndPerfil(req, res) {
         return res.status(400).json({
             message: 'Email, password and nome_completo are required'
         });
+    }
+
+    if (!isPasswordValid(password, nome_completo, data_nasc)) {
+        return res.status(400).json({
+            message: "Password can't be validated, because it doesn't folllow the rules"
+        })
     }
 
     try {
@@ -67,7 +73,7 @@ export async function createUserAndPerfil(req, res) {
             await client.query('COMMIT');
 
             // Return complete user data
-            res.status(201).json({
+            return res.status(201).json({
                 message: 'User and perfil created successfully',
                 data: {
                     user: userResult.rows[0],
@@ -77,6 +83,9 @@ export async function createUserAndPerfil(req, res) {
 
         } catch (error) {
             await client.query('ROLLBACK');
+            return res.status(400).json({
+                message: "error creating the user and perfil"
+            })
             throw error;
         } finally {
             client.release();
@@ -92,7 +101,7 @@ export async function createUserAndPerfil(req, res) {
             });
         }
         
-        res.status(500).json({
+        return res.status(500).json({
             message: 'Failed to create user and perfil'
         });
     }
@@ -119,7 +128,7 @@ export async function getUsersAndPerfil(req, res) {
             })
         }
 
-        res.status(200).json({
+        return res.status(200).json({
             message: "Successfully fetched users",
             data: result.rows
         })
@@ -153,7 +162,7 @@ export async function getUserAndPerfil(req, res) {
             })
         }
 
-        res.status(200).json({
+        return res.status(200).json({
             message: "Successfully fetched user",
             data: result.rows[0]
         })
@@ -183,14 +192,14 @@ export async function updateUserAndPerfil(req, res) {
             })
         }
 
-        res.status(200).json({
+        return res.status(200).json({
             message: "Successfully updated user",
             data: result.rows[0]
         })
 
     } catch (error) {
         console.log(error);
-        res.status(403).json({
+        return res.status(403).json({
             message: "There was an error updating the user profile"
         })
     }
@@ -200,7 +209,9 @@ export async function activateUsers(req, res) {
     const { userIds } = req.body;
 
     if (!userIds || userIds.length === 0) {
-        return res.status(400).json({ message: 'User IDs are required' });
+        return res.status(400).json({ 
+            message: 'User IDs are required' 
+        });
     }
 
     // ANY allows to pass an array of data to the query
@@ -216,13 +227,18 @@ export async function activateUsers(req, res) {
         const result = await pool.query(query, [userIds]);
 
         if (result.rowCount === 0) {
-            return res.status(404).json({ message: 'No users were activated' });
+            return res.status(404).json({ 
+                message: 'No users were activated' 
+            });
         }
 
-        res.json({ message: "Users activated successfully", data: result.rows })
+        return res.json({ 
+            message: "Users activated successfully", 
+            data: result.rows 
+        })
     } catch (error) {
         console.log(error);
-        res.status(403).json({
+        return res.status(403).json({
             message: "There was an error activating the users"
         })
     }
@@ -232,7 +248,9 @@ export async function deactivateUsers(req, res) {
     const { userIds } = req.body;
 
     if (!userIds || userIds.length === 0) {
-        return res.status(400).json({ message: 'User IDs are required' });
+        return res.status(400).json({ 
+            message: 'User IDs are required' 
+        });
     }
     
     const query = `
@@ -246,13 +264,18 @@ export async function deactivateUsers(req, res) {
         const result = await pool.query(query, [userIds]);  
     
         if (result.rowCount === 0) {
-            return res.status(404).json({ message: 'No users were deactivated' });
+            return res.status(404).json({ 
+                message: 'No users were deactivated' 
+            });
         }
     
-        res.json({ message: 'Users deactivated successfully', data: result.rows });
+        return res.json({ 
+            message: 'Users deactivated successfully', 
+            data: result.rows 
+        });
     } catch (error) {
         console.log(error);
-        res.status(403).json({
+        return res.status(403).json({
             message: "There was an error deactivating the users"
         })
     }
@@ -262,7 +285,9 @@ export async function deleteUsers(req, res) {
     const { userIds } = req.body;
 
     if (!userIds || userIds.length === 0) {
-        return res.status(400).json({ message: 'User IDs are required' });
+        return res.status(400).json({ 
+            message: 'User IDs are required' 
+        });
     }
 
     const query = `
@@ -275,26 +300,25 @@ export async function deleteUsers(req, res) {
         const result = await pool.query(query, [userIds]);
 
         if (result.rowCount === 0) {
-            return res.status(404).json({ message: 'No users were deleted' });
+            return res.status(404).json({ 
+                message: 'No users were deleted' 
+            });
         }
 
-        res.status(200).json({
+        return res.status(200).json({
             message: 'Users deleted successfully',
             data: result.rows
         });
     } catch (error) {
         console.log(error);
-        res.status(403).json({
+        return res.status(403).json({
             message: "There was an error deleting the users"
         })
     }
 }
 
 
-
-
 // GPT WROTE THIS CODE BELOW:
-
 
 
 // MEALS (refeicao)
@@ -319,7 +343,7 @@ export async function getMeals(req, res) {
             })
         }
 
-        res.status(200).json({
+        return res.status(200).json({
             message: "Successfully fetched meals",
             data: result.rows,
             fromDate: monday,
@@ -327,7 +351,9 @@ export async function getMeals(req, res) {
         })
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Failed to fetch meals' });
+        return res.status(500).json({ 
+            message: 'Failed to fetch meals' 
+        });
     }
 }
 
@@ -336,12 +362,19 @@ export async function getMeal(req, res) {
     try {
         const result = await pool.query(`SELECT * FROM refeicao WHERE id = $1`, [mealId]);
         if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'Meal not found' });
+            return res.status(404).json({ 
+                message: 'Meal not found' 
+            });
         }
-        res.status(200).json({ message: 'Meal fetched successfully', data: result.rows[0] });
+        return res.status(200).json({
+            message: 'Meal fetched successfully', 
+            data: result.rows[0] 
+        });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Failed to fetch meal' });
+        return res.status(500).json({ 
+            message: 'Failed to fetch meal' 
+        });
     }
 }
 
@@ -359,15 +392,18 @@ export async function createMeal(req, res) {
     } = req.body;
 
     if (!tipo_pessoa || !data) {
-        return res.status(400).json({ message: 'tipo_pessoa and data are required' });
+        return res.status(400).json({ 
+            message: 'tipo_pessoa and data are required' 
+        });
     }
 
     const hasUsuario = Boolean(usuario_id);
     const hasHospede = Boolean(hospede_id);
     const hasConvidado = Boolean(convidado_id);
-    const associationsCount = [hasUsuario, hasHospede, hasConvidado].filter(Boolean).length;
-    if (associationsCount !== 1) {
-        return res.status(400).json({ message: 'Provide exactly one of usuario_id, hospede_id, convidado_id' });
+    if (hasUsuario && hasConvidado && hasHospede) {
+        return res.status(400).json({ 
+            message: 'Provide exactly one of usuario_id, hospede_id, convidado_id' 
+        });
     }
 
     try {
@@ -390,10 +426,15 @@ export async function createMeal(req, res) {
             ]
         );
 
-        res.status(201).json({ message: 'Meal created successfully', data: result.rows[0] });
+        return res.status(201).json({ 
+            message: 'Meal created successfully', 
+            data: result.rows[0]
+        });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Failed to create meal' });
+        return res.status(500).json({ 
+            message: 'Failed to create meal' 
+        });
     }
 }
 
@@ -420,13 +461,19 @@ export async function updateMeal(req, res) {
         );
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'Meal not found' });
+            return res.status(404).json({ 
+                message: 'Meal not found' 
+            });
         }
 
-        res.status(200).json({ message: 'Meal updated successfully', data: result.rows[0] });
+        return res.status(200).json({ 
+            message: 'Meal updated successfully', data: result.rows[0] 
+        });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Failed to update meal' });
+        return res.status(500).json({ 
+            message: 'Failed to update meal' 
+        });
     }
 }
 
@@ -435,12 +482,19 @@ export async function deleteMeal(req, res) {
     try {
         const result = await pool.query(`DELETE FROM refeicao WHERE id = $1 RETURNING *`, [mealId]);
         if (result.rowCount === 0) {
-            return res.status(404).json({ message: 'Meal not found' });
+            return res.status(404).json({ 
+                message: 'Meal not found' 
+            });
         }
-        res.status(200).json({ message: 'Meal deleted successfully', data: result.rows[0] });
+        return res.status(200).json({ 
+            message: 'Meal deleted successfully', 
+            data: result.rows[0] 
+        });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Failed to delete meal' });
+        return res.status(500).json({ 
+            message: 'Failed to delete meal' 
+        });
     }
 }
 
@@ -470,10 +524,17 @@ export async function getAccommodations(req, res) {
                 message: "No accommodations found"
             })
         }
-        res.status(200).json({ message: 'Accommodations fetched successfully', data: result.rows, fromDate: monday, toDate: sunday });
+        return res.status(200).json({ 
+            message: 'Accommodations fetched successfully', 
+            data: result.rows, 
+            fromDate: monday, 
+            toDate: sunday 
+        });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Failed to fetch accommodations' });
+        return res.status(500).json({ 
+            message: 'Failed to fetch accommodations' 
+        });
     }
 }
 
@@ -483,12 +544,17 @@ export async function getAccommodation(req, res) {
     try {
         const result = await pool.query(`SELECT * FROM hospedagem WHERE id = $1`, [accommodationId]);
         if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'Accommodation not found' });
+            return res.status(404).json({ message: 'Accommodation not found' 
+        });
         }
-        res.status(200).json({ message: 'Accommodation fetched successfully', data: result.rows[0] });
+        return res.status(200).json({ 
+            message: 'Accommodation fetched successfully', data: result.rows[0] 
+        });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Failed to fetch accommodation' });
+        return res.status(500).json({ 
+            message: 'Failed to fetch accommodation' 
+        });
     }
 }
 
@@ -496,7 +562,9 @@ export async function createAccommodation(req, res) {
     const { anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, status_hospedagem } = req.body;
 
     if (!anfitriao_id || !hospede_id || !data_chegada || !data_saida || !quarto_id) {
-        return res.status(400).json({ message: 'anfitriao_id, hospede_id, data_chegada, data_saida and quarto_id are required' });
+        return res.status(400).json({ 
+            message: 'anfitriao_id, hospede_id, data_chegada, data_saida and quarto_id are required' 
+        });
     }
 
     try {
@@ -507,10 +575,14 @@ export async function createAccommodation(req, res) {
             [anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, status_hospedagem || null]
         );
 
-        res.status(201).json({ message: 'Accommodation created successfully', data: result.rows[0] });
+        return res.status(201).json({ 
+            message: 'Accommodation created successfully', data: result.rows[0] 
+        });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Failed to create accommodation' });
+        return res.status(500).json({ 
+            message: 'Failed to create accommodation' 
+        });
     }
 }
 
@@ -531,13 +603,18 @@ export async function updateAccommodation(req, res) {
         );
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'Accommodation not found' });
+            return res.status(404).json({ message: 'Accommodation not found' 
+        });
         }
 
-        res.status(200).json({ message: 'Accommodation updated successfully', data: result.rows[0] });
+        return res.status(200).json({ 
+            message: 'Accommodation updated successfully', data: result.rows[0] 
+        });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Failed to update accommodation' });
+        return res.status(500).json({ 
+            message: 'Failed to update accommodation' 
+        });
     }
 }
 
@@ -546,12 +623,17 @@ export async function deleteAccommodation(req, res) {
     try {
         const result = await pool.query(`DELETE FROM hospedagem WHERE id = $1 RETURNING *`, [accommodationId]);
         if (result.rowCount === 0) {
-            return res.status(404).json({ message: 'Accommodation not found' });
+            return res.status(404).json({ message: 'Accommodation not found' 
+        });
         }
-        res.status(200).json({ message: 'Accommodation deleted successfully', data: result.rows[0] });
+        return res.status(200).json({ 
+            message: 'Accommodation deleted successfully', data: result.rows[0] 
+        });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Failed to delete accommodation' });
+        return res.status(500).json({ 
+            message: 'Failed to delete accommodation' 
+        });
     }
 }
 
@@ -583,13 +665,15 @@ export async function getRooms(req, res) {
                 message: "No rooms found"
             })
         }
-        res.status(200).json({
+        return res.status(200).json({
             message: 'Rooms fetched successfully',
             data: result.rows
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Failed to fetch rooms' });
+        return res.status(500).json({ 
+            message: 'Failed to fetch rooms' 
+        });
     }
 }
 
@@ -597,10 +681,14 @@ export async function getRooms(req, res) {
 export async function getGuests(req, res) {
     try {
         const result = await pool.query(`SELECT * FROM hospede ORDER BY criado_em DESC`);
-        res.status(200).json({ message: 'Guests fetched successfully', data: result.rows });
+        return res.status(200).json({ 
+            message: 'Guests fetched successfully', data: result.rows 
+        });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Failed to fetch guests' });
+        return res.status(500).json({ 
+            message: 'Failed to fetch guests' 
+        });
     }
 }
 
@@ -608,7 +696,9 @@ export async function createGuest(req, res) {
     const { nome, genero, tipo_documento, num_documento, funcao, origem } = req.body;
 
     if (!nome || !genero || !tipo_documento || !num_documento) {
-        return res.status(400).json({ message: 'nome, genero, tipo_documento and num_documento are required' });
+        return res.status(400).json({ 
+            message: 'nome, genero, tipo_documento and num_documento are required' 
+        });
     }
 
     try {
@@ -619,10 +709,14 @@ export async function createGuest(req, res) {
             [nome, genero, tipo_documento, num_documento, funcao || null, origem || null]
         );
 
-        res.status(201).json({ message: 'Guest created successfully', data: result.rows[0] });
+        return res.status(201).json({ 
+            message: 'Guest created successfully', data: result.rows[0] 
+        });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Failed to create guest' });
+        return res.status(500).json({ 
+            message: 'Failed to create guest' 
+        });
     }
 }
 
@@ -645,13 +739,18 @@ export async function updateGuest(req, res) {
         );
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'Guest not found' });
+            return res.status(404).json({ message: 'Guest not found' 
+        });
         }
 
-        res.status(200).json({ message: 'Guest updated successfully', data: result.rows[0] });
+        return res.status(200).json({ 
+            message: 'Guest updated successfully', data: result.rows[0] 
+        });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Failed to update guest' });
+        return res.status(500).json({ 
+            message: 'Failed to update guest' 
+        });
     }
 }
 
@@ -660,12 +759,17 @@ export async function deleteGuest(req, res) {
     try {
         const result = await pool.query(`DELETE FROM hospede WHERE id = $1 RETURNING *`, [guestId]);
         if (result.rowCount === 0) {
-            return res.status(404).json({ message: 'Guest not found' });
+            return res.status(404).json({ message: 'Guest not found' 
+        });
         }
-        res.status(200).json({ message: 'Guest deleted successfully', data: result.rows[0] });
+        return res.status(200).json({ 
+            message: 'Guest deleted successfully', data: result.rows[0] 
+        });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Failed to delete guest' });
+        return res.status(500).json({ 
+            message: 'Failed to delete guest' 
+        });
     }
 }
 
@@ -673,10 +777,14 @@ export async function deleteGuest(req, res) {
 export async function getRequests(req, res) {
     try {
         const result = await pool.query(`SELECT * FROM solicitacao ORDER BY criado_em DESC`);
-        res.status(200).json({ message: 'Requests fetched successfully', data: result.rows });
+        return res.status(200).json({ 
+            message: 'Requests fetched successfully', data: result.rows 
+        });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Failed to fetch requests' });
+        return res.status(500).json({ 
+            message: 'Failed to fetch requests' 
+        });
     }
 }
 
@@ -685,11 +793,16 @@ export async function visualizeRequest(req, res) {
     try {
         const result = await pool.query(`UPDATE solicitacao SET visualizada = TRUE WHERE id = $1 RETURNING *`, [requestId]);
         if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'Request not found' });
+            return res.status(404).json({ message: 'Request not found' 
+        });
         }
-        res.status(200).json({ message: 'Request visualized successfully', data: result.rows[0] });
+        return res.status(200).json({ 
+            message: 'Request visualized successfully', data: result.rows[0] 
+        });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Failed to visualize request' });
+        return res.status(500).json({ 
+            message: 'Failed to visualize request' 
+        });
     }
 }

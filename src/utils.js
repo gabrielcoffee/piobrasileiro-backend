@@ -1,5 +1,7 @@
 import pool from "./db";
 
+// Unused since it's a simple app with about 150 users, pagination might be necessary if this would scale to 
+// Hundreds of thousands of users, then pagination could be used to improve performance
 export async function calculatePagination(currentPage, itemsPerPage = 8, db_table) {
 
     // Query the database to get the number of entities in the list
@@ -31,4 +33,21 @@ export function getCurrentWeekDates() {
     sunday.setDate(monday.getDate() + 6);
     
     return { monday, sunday };
+}
+
+export function isPasswordValid(password, username, birthdate) {
+    if (password.length >= 8 &&
+        /[A-Z]/.test(password) &&
+        /[a-z]/.test(password) &&
+        /[0-9]/.test(password) &&
+        !password.includes(username) &&
+        !password.includes(birthdate)
+    ) 
+    {
+        return true;
+    } 
+    else
+    {
+        return false;
+    }
 }
