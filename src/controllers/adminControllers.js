@@ -234,7 +234,9 @@ export async function activateUsers(req, res) {
 
         return res.json({ 
             message: "Users activated successfully", 
-            data: result.rows 
+            data: {
+                users: result.rows
+            }
         })
     } catch (error) {
         console.log(error);
@@ -271,7 +273,9 @@ export async function deactivateUsers(req, res) {
     
         return res.json({ 
             message: 'Users deactivated successfully', 
-            data: result.rows 
+            data: {
+                users: result.rows
+            }
         });
     } catch (error) {
         console.log(error);
@@ -307,7 +311,9 @@ export async function deleteUsers(req, res) {
 
         return res.status(200).json({
             message: 'Users deleted successfully',
-            data: result.rows
+            data: {
+                users: result.rows
+            }
         });
     } catch (error) {
         console.log(error);
@@ -337,6 +343,15 @@ export async function getMeals(req, res) {
 
         const result = await pool.query(query, [monday, sunday]);
 
+        // Conseguir numero total de refeicoes, almoco_colegio, almoco_levar, janta_colegio, observacoes
+
+        const quantityData = {
+            totalMeals: result.rows.length,
+            totalAlmocoColegio: result.rows.filter(meal => meal.almoco_colegio).length,
+            totalAlmocoLevar: result.rows.filter(meal => meal.almoco_levar).length,
+            totalJantaColegio: result.rows.filter(meal => meal.janta_colegio).length,
+        };
+
         if (result.rows.length === 0){
             return res.status(404).json({
                 message: "No meals found"
@@ -345,9 +360,10 @@ export async function getMeals(req, res) {
 
         return res.status(200).json({
             message: "Successfully fetched meals",
-            data: result.rows,
-            fromDate: monday,
-            toDate: sunday
+            data: {
+                meals: result.rows,
+                quantityData: quantityData
+            }
         })
     } catch (error) {
         console.error(error);
@@ -368,7 +384,9 @@ export async function getMeal(req, res) {
         }
         return res.status(200).json({
             message: 'Meal fetched successfully', 
-            data: result.rows[0] 
+            data: {
+                meal: result.rows[0]
+            }
         });
     } catch (error) {
         console.error(error);
@@ -428,7 +446,9 @@ export async function createMeal(req, res) {
 
         return res.status(201).json({ 
             message: 'Meal created successfully', 
-            data: result.rows[0]
+            data: {
+                meal: result.rows[0]
+            }
         });
     } catch (error) {
         console.error(error);
@@ -467,7 +487,10 @@ export async function updateMeal(req, res) {
         }
 
         return res.status(200).json({ 
-            message: 'Meal updated successfully', data: result.rows[0] 
+            message: 'Meal updated successfully', 
+            data: {
+                meal: result.rows[0]
+            }
         });
     } catch (error) {
         console.error(error);
@@ -488,7 +511,9 @@ export async function deleteMeal(req, res) {
         }
         return res.status(200).json({ 
             message: 'Meal deleted successfully', 
-            data: result.rows[0] 
+            data: {
+                meal: result.rows[0]
+            }
         });
     } catch (error) {
         console.error(error);
@@ -526,9 +551,13 @@ export async function getAccommodations(req, res) {
         }
         return res.status(200).json({ 
             message: 'Accommodations fetched successfully', 
-            data: result.rows, 
-            fromDate: monday, 
-            toDate: sunday 
+            data: {
+                accommodations: result.rows,
+                dateRange: {
+                    fromDate: monday, 
+                    toDate: sunday 
+                }
+            }
         });
     } catch (error) {
         console.error(error);
@@ -576,7 +605,10 @@ export async function createAccommodation(req, res) {
         );
 
         return res.status(201).json({ 
-            message: 'Accommodation created successfully', data: result.rows[0] 
+            message: 'Accommodation created successfully', 
+            data: {
+                accommodation: result.rows[0]
+            }
         });
     } catch (error) {
         console.error(error);
@@ -608,7 +640,10 @@ export async function updateAccommodation(req, res) {
         }
 
         return res.status(200).json({ 
-            message: 'Accommodation updated successfully', data: result.rows[0] 
+            message: 'Accommodation updated successfully', 
+            data: {
+                accommodation: result.rows[0]
+            }
         });
     } catch (error) {
         console.error(error);
@@ -627,7 +662,10 @@ export async function deleteAccommodation(req, res) {
         });
         }
         return res.status(200).json({ 
-            message: 'Accommodation deleted successfully', data: result.rows[0] 
+            message: 'Accommodation deleted successfully', 
+            data: {
+                accommodation: result.rows[0]
+            }
         });
     } catch (error) {
         console.error(error);
@@ -667,7 +705,9 @@ export async function getRooms(req, res) {
         }
         return res.status(200).json({
             message: 'Rooms fetched successfully',
-            data: result.rows
+            data: {
+                rooms: result.rows
+            }
         });
     } catch (error) {
         console.error(error);
@@ -682,7 +722,10 @@ export async function getGuests(req, res) {
     try {
         const result = await pool.query(`SELECT * FROM hospede ORDER BY criado_em DESC`);
         return res.status(200).json({ 
-            message: 'Guests fetched successfully', data: result.rows 
+            message: 'Guests fetched successfully', 
+            data: {
+                guests: result.rows
+            }
         });
     } catch (error) {
         console.error(error);
@@ -710,7 +753,10 @@ export async function createGuest(req, res) {
         );
 
         return res.status(201).json({ 
-            message: 'Guest created successfully', data: result.rows[0] 
+            message: 'Guest created successfully', 
+            data: {
+                guest: result.rows[0]
+            }
         });
     } catch (error) {
         console.error(error);
@@ -744,7 +790,10 @@ export async function updateGuest(req, res) {
         }
 
         return res.status(200).json({ 
-            message: 'Guest updated successfully', data: result.rows[0] 
+            message: 'Guest updated successfully', 
+            data: {
+                guest: result.rows[0]
+            }
         });
     } catch (error) {
         console.error(error);
@@ -763,7 +812,10 @@ export async function deleteGuest(req, res) {
         });
         }
         return res.status(200).json({ 
-            message: 'Guest deleted successfully', data: result.rows[0] 
+            message: 'Guest deleted successfully', 
+            data: {
+                guest: result.rows[0]
+            }
         });
     } catch (error) {
         console.error(error);
@@ -778,7 +830,10 @@ export async function getRequests(req, res) {
     try {
         const result = await pool.query(`SELECT * FROM solicitacao ORDER BY criado_em DESC`);
         return res.status(200).json({ 
-            message: 'Requests fetched successfully', data: result.rows 
+            message: 'Requests fetched successfully', 
+            data: {
+                requests: result.rows
+            }
         });
     } catch (error) {
         console.error(error);
@@ -797,7 +852,10 @@ export async function visualizeRequest(req, res) {
         });
         }
         return res.status(200).json({ 
-            message: 'Request visualized successfully', data: result.rows[0] 
+            message: 'Request visualized successfully', 
+            data: {
+                request: result.rows[0]
+            }
         });
     } catch (error) {
         console.error(error);

@@ -20,9 +20,11 @@ export async function getCommonPerfil(req, res) {
             })
         }
 
-        res.status(200).json({
+        return res.status(200).json({
             message: 'Perfil fetched successfully',
-            data: result.rows[0]
+            data: {
+                profile: result.rows[0]
+            }
         })
     } catch (error) {
         console.log(error);
@@ -53,9 +55,11 @@ export async function updatePerfilName(req, res) {
             })
         }
 
-        res.status(200).json({
+        return res.status(200).json({
             message: "Nome do perfil atualizado",
-            body: result.rows[0]
+            data: {
+                profile: result.rows[0]
+            }
         })
 
     } catch (error) {
@@ -137,7 +141,10 @@ export async function updateUserPassword(req, res) {
         )
 
         return res.status(200).json({
-            message: "Succesfully changed user password"
+            message: "Successfully changed user password",
+            data: {
+                message: "Password updated successfully"
+            }
         })
 
     } catch (error) {
@@ -174,7 +181,9 @@ export async function getUserMeals(req, res) {
 
         return res.status(200).json({
             message: "Successfully fetched meals",
-            data: result.rows
+            data: {
+                meals: result.rows
+            }
         })
     } catch (error) {
         console.error(error);
@@ -208,7 +217,9 @@ export async function createMeal(req, res) {
 
         return res.status(200).json({
             message: "Meal created successfully",
-            data: result.rows[0]
+            data: {
+                meal: result.rows[0]
+            }
         })
     } catch(error) {
         console.log(error);
@@ -268,7 +279,9 @@ export async function upsertMeals(req, res) {
 
         return res.status(200).json({
             message: "Meals created successfully",
-            data: result.rows
+            data: {
+                meals: result.rows
+            }
         })
     } catch(error) {
         console.log(error);
