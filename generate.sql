@@ -164,8 +164,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create the trigger
+-- Triggers
 CREATE TRIGGER hospedagem_ocupado_trigger
     AFTER INSERT OR UPDATE OR DELETE ON hospedagem
     FOR EACH ROW
     EXECUTE FUNCTION manage_quarto_ocupado();
+
+
+-- Constraints
+ALTER TABLE refeicao ADD CONSTRAINT check_tipo_pessoa UNIQUE(usuario_id, data);
+ALTER TABLE refeicao ADD CONSTRAINT check_tipo_pessoa_hospede UNIQUE(hospede_id, data);
+ALTER TABLE refeicao ADD CONSTRAINT check_tipo_pessoa_convidado UNIQUE(convidado_id, data);
