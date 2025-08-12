@@ -51,3 +51,29 @@ export function isPasswordValid(password, username, birthdate) {
         return false;
     }
 }
+
+export function sqlValuesString(array, num_columns) {
+
+    // Maps the array and number of columns in the array(table)
+    // join them to create an string like this "(x,y), (z,w), ..."
+    // This string can be used when inserting many entities at once
+
+    const valuesString = array.map((obj, index) => {
+        let rowString = '(';
+        const start = index * num_columns;
+
+        for (var i = 1; i < num_columns+1; i++) {
+            rowString += `$${start + i},`
+        }
+
+        // Remove last comma and close row
+        rowString = rowString.slice(0, -1) + ')';
+
+        return rowString;
+    }).join(', ');
+
+    return valuesString;
+
+    // A flatmap needs to be used later for the query second parameter
+    // A flatmap creates a flat (1D) array with the data from all objects
+}

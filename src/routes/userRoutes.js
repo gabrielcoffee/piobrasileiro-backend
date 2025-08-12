@@ -1,16 +1,18 @@
 import express from 'express';
 import authMiddleware from '../middleware/authMiddleware';
-import { getCommonPerfil } from '../controllers/userControllers';
+import { getCommonPerfil, getUserMeals, updatePerfilName, updateUserPassword, upsertMeals } from '../controllers/userControllers';
 
 const router = express.Router();
 
+// Getting user/profile data
 router.get('/perfil', authMiddleware, getCommonPerfil);
-router.put('/perfil', authMiddleware, updateCommonPerfil)
 
+// Updating user/profile data
+router.put('/perfil_nome', authMiddleware, updatePerfilName)
 router.put('/perfil/senha', authMiddleware, updateUserPassword);
 
-router.get('/weekmeals', authMiddleware, getWeekMeals);
-router.post('/refeicao',  authMiddleware, createRefeicao);
-router.put('/refeicao/:id', authMiddleware, updateRefeicao);
+// Getting meal data
+router.get('/weekmeals', authMiddleware, getUserMeals);
+router.post('/refeicao',  authMiddleware, upsertMeals);
 
 export default router;
