@@ -15,7 +15,7 @@ CREATE TABLE user_auth (
   password varchar(255) NOT NULL,
   tipo_usuario tipo_usuario_enum default 'comum',
   active boolean default true,
-  created_at TIMESTAMP DEFAULT now()
+  created_at TIMESTAMP DEFAULT now(),
   -- Constraints
   constraint valid_email CHECK (email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
 );
@@ -47,7 +47,7 @@ CREATE TABLE solicitacao (
 
 CREATE TABLE quarto (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    numero varchar(10) not null,
+    numero varchar(10) not null
 );
 
 
@@ -172,6 +172,4 @@ CREATE TRIGGER hospedagem_ocupado_trigger
 
 
 -- Constraints
-ALTER TABLE refeicao ADD CONSTRAINT check_tipo_pessoa UNIQUE(usuario_id, data);
-ALTER TABLE refeicao ADD CONSTRAINT check_tipo_pessoa_hospede UNIQUE(hospede_id, data);
-ALTER TABLE refeicao ADD CONSTRAINT check_tipo_pessoa_convidado UNIQUE(convidado_id, data);
+ALTER TABLE refeicao ADD CONSTRAINT unique_user_date UNIQUE(usuario_id, data);
