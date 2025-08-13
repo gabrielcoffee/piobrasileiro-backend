@@ -10,27 +10,28 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Tabela de autenticação de usuário
 CREATE TABLE user_auth (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email VARCHAR(320) UNIQUE NOT NULL,
-  password varchar(255) NOT NULL,
-  tipo_usuario tipo_usuario_enum default 'comum',
-  active boolean default true,
-  created_at TIMESTAMP DEFAULT now(),
-  -- Constraints
-  constraint valid_email CHECK (email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(320) UNIQUE NOT NULL,
+    password varchar(255) NOT NULL,
+    tipo_usuario tipo_usuario_enum default 'comum',
+    active boolean default true,
+    created_at TIMESTAMP DEFAULT now(),
+    -- Constraints
+    constraint valid_email CHECK (email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
 );
 
 -- Tabela de perfis
 CREATE TABLE perfil (
-  user_id UUID PRIMARY KEY REFERENCES user_auth(id) ON DELETE CASCADE,
-  nome_completo VARCHAR(100) NOT NULL,
-  data_nasc DATE,
-  genero genero_enum,
-  funcao varchar(100),
-  num_documento VARCHAR(20),
-  tipo_documento tipo_documento_enum,
-  avatar_url TEXT,
-  criado_em TIMESTAMP DEFAULT now()
+    user_id UUID PRIMARY KEY REFERENCES user_auth(id) ON DELETE CASCADE,
+    nome_completo VARCHAR(100) NOT NULL,
+    data_nasc DATE,
+    genero genero_enum,
+    funcao varchar(100),
+    num_documento VARCHAR(20),
+    tipo_documento tipo_documento_enum,
+    avatar_url TEXT,
+    observacoes VARCHAR(255),
+    criado_em TIMESTAMP DEFAULT now()
 );
 
 CREATE TABLE solicitacao (
@@ -59,6 +60,7 @@ CREATE TABLE hospede (
     num_documento varchar(20) not null,
     funcao varchar(100),
     origem varchar(100),
+    observacoes VARCHAR(255),
     criado_em TIMESTAMP DEFAULT now()
 );
 
@@ -94,11 +96,11 @@ CREATE TABLE refeicao (
     hospede_id UUID REFERENCES hospede(id) ON DELETE CASCADE,
     convidado_id UUID REFERENCES convidado(id) ON DELETE CASCADE,
 
+    disponivel BOOLEAN DEFAULT true,
     data DATE NOT NULL,
     almoco_colegio BOOLEAN DEFAULT false,
     almoco_levar BOOLEAN DEFAULT false,
     janta_colegio BOOLEAN DEFAULT false,
-    observacoes VARCHAR(255),
     criado_em TIMESTAMP DEFAULT now(),
 
     -- Constraints baseadas no tipo de pessoa
