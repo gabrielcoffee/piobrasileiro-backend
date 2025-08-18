@@ -8,7 +8,7 @@ export async function getCommonPerfil(req, res) {
 
     try {
         const result = await pool.query(`
-            SELECT p.avatar_url, p.nome_completo, ua.email
+            SELECT ua.tipo_usuario AS role, p.avatar_url AS avatar, p.nome_completo AS fullname, ua.email AS email
             FROM user_auth ua
             JOIN perfil p on ua.id = p.user_id
             WHERE ua.id = $1
@@ -22,9 +22,7 @@ export async function getCommonPerfil(req, res) {
 
         return res.status(200).json({
             message: 'Perfil fetched successfully',
-            data: {
-                profile: result.rows[0]
-            }
+            data: result.rows[0]
         })
     } catch (error) {
         console.log(error);
@@ -79,8 +77,6 @@ router.post('/refeicao',  authMiddleware, createRefeicao);
 router.put('/refeicao/:id', authMiddleware, updateRefeicao);
 */
 
-
-
 export async function updateUserPassword(req, res) {
 
     const userId = req.userId;
@@ -133,7 +129,7 @@ export async function updateUserPassword(req, res) {
             UPDATE user_auth
             SET password = $1
             WHERE id = $2
-        `
+        `;
 
         const resultChange = await pool.query(
             queryChangePassword,
@@ -165,7 +161,7 @@ export async function getUserMeals(req, res) {
             SELECT * FROM refeicao 
             WHERE data >= $1 
             AND data <= $2
-            WHERE usuario_id = $3
+            AND usuario_id = $3
         `;
 
         const result = await pool.query(
@@ -233,45 +229,48 @@ export async function upsertMeals(req, res) {
     const userId = req.userId;
     const meals = req.body.meals;
 
+    if (!meals) {
+        return res.status(400).json({
+            message: "No meals provided"
+        })
+    }
+
     // Add the userId to each meal
     const mealsToInsert = meals.map((meal) => {
         return {
-            tipo_pessoa: meal.tipo_pessoa,
+            tipo_pessoa: 'usuario',
             usuario_id: userId,
             data: meal.data,
             almoco_colegio: meal.almoco_colegio || false,
             almoco_levar: meal.almoco_levar || false,
             janta_colegio: meal.janta_colegio || false,
-            observacoes: meal.observacoes || null
         }
     })
 
     try {
         // Create the Bulk insert String
-        const valuesString = sqlValuesString(mealsToInsert, 7);
+        const valuesString = sqlValuesString(mealsToInsert, 6);
 
         // Create the flat (1D) array with all the data from every meal
         const flatValues = mealsToInsert.flatMap(meal => [
             meal.tipo_pessoa,
-            userId,
+            meal.usuario_id,
             meal.data,
             meal.almoco_colegio,
             meal.almoco_levar,
             meal.janta_colegio,
-            meal.observacoes
-        ]);
+        ]); 
 
         
         // Insert the meals into the database
         const query = `
-            INSERT INTO refeicao (tipo_pessoa, usuario_id, data, almoco_colegio, almoco_levar, janta_colegio, observacoes)
+            INSERT INTO refeicao (tipo_pessoa, usuario_id, data, almoco_colegio, almoco_levar, janta_colegio)
             VALUES ${valuesString}
             ON CONFLICT (usuario_id, data)
             DO UPDATE SET
                 almoco_colegio = EXCLUDED.almoco_colegio,
                 almoco_levar = EXCLUDED.almoco_levar,
-                janta_colegio = EXCLUDED.janta_colegio,
-                observacoes = EXCLUDED.observacoes
+                janta_colegio = EXCLUDED.janta_colegio
             RETURNING *
         `
 

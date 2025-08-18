@@ -1,6 +1,7 @@
 import pool from '../db.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { getUserLoginData } from '../utils.js';
 
 export async function LoginUser(req, res) {
     const { email, password } = req.body;
@@ -39,9 +40,31 @@ export async function LoginUser(req, res) {
             { expiresIn: process.env.JWT_EXPIRES_IN }
         );
 
+        // Base user data
+        const userDataQuery = `
+            SELECT p.avatar_url AS avatar,
+                ua.email AS email,
+                p.nome_completo AS fullname,
+                ua.tipo_usuario AS role
+            FROM user_auth ua
+            JOIN perfil p
+            ON p.user_id = ua.id
+            WHERE ua.id = $1
+        `;
+
+        const userDataResult = await pool.query(userDataQuery, [userId]);
+
+        if (userDataResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "User lacks profile data"
+            })
+        }
+
+        // Respond the client
         res.status(200).json({
             message: 'User logged in successfully',
-            token: token
+            token: token,
+            data: result.rows[0]
         });
 
     } catch (error) {

@@ -115,11 +115,12 @@ export async function getUsersAndPerfil(req, res) {
             SELECT p.*, ua.email, ua.tipo_usuario, ua.active
             FROM user_auth ua
             JOIN perfil p ON p.user_id = ua.id
+            WHERE ua.active = TRUE
             ORDER BY ua.criado_em DESC
         `;
 
         const result = await pool.query(
-            query,
+            query
         );
 
         if (result.rows.length === 0){

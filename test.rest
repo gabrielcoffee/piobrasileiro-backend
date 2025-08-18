@@ -15,6 +15,54 @@ POST http://localhost:3003/auth/login
 content-type: application/json
 
 {
-    "email": "teste@teste.com",
-    "password": "123456"
+    "email": "comum@comum.com",
+    "password": "Bielf1234-"
+}
+
+### Login a registered user as comum
+POST http://localhost:3003/auth/login
+content-type: application/json
+
+{
+    "email": "comum@comum.com",
+    "password": "Bielf1234-"
+}
+
+
+### Create a new user
+POST http://localhost:3003/admin/users
+content-type: application/json
+
+{
+    "email": "comum@comum.com",
+    "password": "Bielf1234-",
+    "nome_completo": "comum da silva",
+    "data_nasc": "1990-01-01",
+    "genero": "m",
+    "funcao": "comum",
+    "num_documento": "1234567809",
+    "tipo_documento": "cpf",
+    "avatar_url": "https://static.vecteezy.com/ti/fotos-gratis/t1/6847951-headshot-retrato-de-homem-senior-no-armazem-idoso-caucasiano-velho-foto.jpg"
+}
+
+### Get all users
+GET http://localhost:3003/admin/users
+content-type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImM4NGEwYWFmLWU2YzYtNDI2Ny1hNzM1LTc1MTZkNWFkYmU5ZSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc1NTUyMTM5MywiZXhwIjoxNzU1NjA3NzkzfQ.m-oZn5XDamwpe0Msca47MaHWePjky19un6mvkSiZbAE
+
+
+### Create a new meal logged as a comum user
+POST http://localhost:3003/user/refeicao
+content-type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImI5MGUyY2RiLTEyMWMtNGQ1Ni05OWRjLWYwMDk0MzY4ZDZkNyIsInJvbGUiOiJjb211bSIsImlhdCI6MTc1NTUzNzg1OCwiZXhwIjoxNzU1NjI0MjU4fQ.OiGY4KmRy_3-Xx1TdIPZzVyee3z4kf-zB32SLHMpBHw
+
+{
+    "meals": [
+        {
+            "data": "2025-08-19",
+            "almoco_colegio": false,
+            "almoco_levar": false,
+            "janta_colegio": false
+        }
+    ]
 }

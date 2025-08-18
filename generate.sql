@@ -10,28 +10,28 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Tabela de autenticação de usuário
 CREATE TABLE user_auth (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email VARCHAR(320) UNIQUE NOT NULL,
-    password varchar(255) NOT NULL,
-    tipo_usuario tipo_usuario_enum default 'comum',
-    active boolean default true,
-    created_at TIMESTAMP DEFAULT now(),
-    -- Constraints
-    constraint valid_email CHECK (email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(320) UNIQUE NOT NULL,
+  password varchar(255) NOT NULL,
+  tipo_usuario tipo_usuario_enum default 'comum',
+  active boolean default true,
+  criado_em TIMESTAMP DEFAULT now(),
+  -- Constraints
+  constraint valid_email CHECK (email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
 );
 
 -- Tabela de perfis
 CREATE TABLE perfil (
-    user_id UUID PRIMARY KEY REFERENCES user_auth(id) ON DELETE CASCADE,
-    nome_completo VARCHAR(100) NOT NULL,
-    data_nasc DATE,
-    genero genero_enum,
-    funcao varchar(100),
-    num_documento VARCHAR(20),
-    tipo_documento tipo_documento_enum,
-    avatar_url TEXT,
-    observacoes VARCHAR(255),
-    criado_em TIMESTAMP DEFAULT now()
+  user_id UUID PRIMARY KEY REFERENCES user_auth(id) ON DELETE CASCADE,
+  nome_completo VARCHAR(100) NOT NULL,
+  data_nasc DATE,
+  genero genero_enum,
+  funcao varchar(100),
+  num_documento VARCHAR(20),
+  tipo_documento tipo_documento_enum,
+  avatar_url TEXT,
+  observacoes VARCHAR(255),
+  criado_em TIMESTAMP DEFAULT now()
 );
 
 CREATE TABLE solicitacao (
@@ -48,16 +48,17 @@ CREATE TABLE solicitacao (
 
 CREATE TABLE quarto (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    numero varchar(10) not null
+    numero varchar(10) not null,
+    capacidade INT not null
 );
 
 
 CREATE TABLE hospede (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nome varchar(100) not null,
-    genero genero_enum not null,
-    tipo_documento tipo_documento_enum not null,
-    num_documento varchar(20) not null,
+    genero genero_enum,
+    tipo_documento tipo_documento_enum,
+    num_documento varchar(20),
     funcao varchar(100),
     origem varchar(100),
     observacoes VARCHAR(255),
@@ -84,6 +85,7 @@ CREATE TABLE convidado (
     funcao VARCHAR(50),
     origem VARCHAR(100),
     data DATE not null,
+    observacoes VARCHAR(255),
     criado_em TIMESTAMP DEFAULT now()
 );
 
@@ -96,7 +98,6 @@ CREATE TABLE refeicao (
     hospede_id UUID REFERENCES hospede(id) ON DELETE CASCADE,
     convidado_id UUID REFERENCES convidado(id) ON DELETE CASCADE,
 
-    disponivel BOOLEAN DEFAULT true,
     data DATE NOT NULL,
     almoco_colegio BOOLEAN DEFAULT false,
     almoco_levar BOOLEAN DEFAULT false,
@@ -109,16 +110,6 @@ CREATE TABLE refeicao (
         (tipo_pessoa = 'hospede' AND usuario_id IS NULL AND hospede_id IS NOT NULL AND convidado_id IS NULL) OR
         (tipo_pessoa = 'convidado' AND usuario_id IS NULL AND hospede_id IS NULL AND convidado_id IS NOT NULL)
     )
-);
-
--- Function to get the room availability for a given week
--- First, create the occupied rooms table
-CREATE TABLE quarto_ocupado (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    quarto_id UUID REFERENCES quarto(id) ON DELETE CASCADE,
-    data DATE NOT NULL,
-    hospedagem_id UUID REFERENCES hospedagem(id) ON DELETE CASCADE,
-    UNIQUE(quarto_id, data)
 );
 
 -- Function to manage occupied room dates
@@ -175,3 +166,6 @@ CREATE TRIGGER hospedagem_ocupado_trigger
 
 -- Constraints
 ALTER TABLE refeicao ADD CONSTRAINT unique_user_date UNIQUE(usuario_id, data);
+
+
+

@@ -1,4 +1,4 @@
-import pool from "./db";
+import pool from "./db.js";
 
 // Unused since it's a simple app with about 150 users, pagination might be necessary if this would scale to 
 // Hundreds of thousands of users, then pagination could be used to improve performance
@@ -76,4 +76,31 @@ export function sqlValuesString(array, num_columns) {
 
     // A flatmap needs to be used later for the query second parameter
     // A flatmap creates a flat (1D) array with the data from all objects
+}
+
+// In utils.js or a new services folder
+export async function getUserLoginData(userId) {
+    // Get profile
+    const profileQuery = `
+        SELECT p.avatar_url, p.nome_completo, ua.email
+        FROM user_auth ua
+        JOIN perfil p on ua.id = p.user_id
+        WHERE ua.id = $1
+    `;
+    const profileResult = await pool.query(profileQuery, [userId]);
+    
+    // Get meals for current week
+    const { monday, sunday } = getCurrentWeekDates();
+    const mealsQuery = `
+        SELECT * FROM refeicao 
+        WHERE usuario_id = $1 
+        AND data >= $2 
+        AND data <= $3
+    `;
+    const mealsResult = await pool.query(mealsQuery, [userId, monday, sunday]);
+    
+    return {
+        profile: profileResult.rows[0],
+        meals: mealsResult.rows
+    };
 }
