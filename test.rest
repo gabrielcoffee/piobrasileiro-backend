@@ -34,13 +34,13 @@ POST http://localhost:3003/admin/users
 content-type: application/json
 
 {
-    "email": "comum@comum.com",
+    "email": "admin@admin.com",
     "password": "Bielf1234-",
-    "nome_completo": "comum da silva",
+    "nome_completo": "admin da silva",
     "data_nasc": "1990-01-01",
     "genero": "m",
-    "funcao": "comum",
-    "num_documento": "1234567809",
+    "funcao": "admin",
+    "num_documento": "1234567890",
     "tipo_documento": "cpf",
     "avatar_url": "https://static.vecteezy.com/ti/fotos-gratis/t1/6847951-headshot-retrato-de-homem-senior-no-armazem-idoso-caucasiano-velho-foto.jpg"
 }
@@ -55,6 +55,22 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImM4NGEwYWFmL
 POST http://localhost:3003/user/refeicao
 content-type: application/json
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImI5MGUyY2RiLTEyMWMtNGQ1Ni05OWRjLWYwMDk0MzY4ZDZkNyIsInJvbGUiOiJjb211bSIsImlhdCI6MTc1NTUzNzg1OCwiZXhwIjoxNzU1NjI0MjU4fQ.OiGY4KmRy_3-Xx1TdIPZzVyee3z4kf-zB32SLHMpBHw
+
+{
+    "meals": [
+        {
+            "data": "2025-08-19",
+            "almoco_colegio": false,
+            "almoco_levar": false,
+            "janta_colegio": false
+        }
+    ]
+}
+
+### save a meal
+POST http://localhost:3003/user/weekmeals
+content-type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjVlZjg5YTQ3LTI4Y2EtNDQ0Ni1hZjc0LWQwMWUwYjYwYThhYiIsInJvbGUiOiJjb211bSIsImlhdCI6MTc1NTYzODQ1NywiZXhwIjoxNzU1NzI0ODU3fQ.qyspgPXoEHQVtEJGM0ehL8gHUwV33RqyaSYjfm3v51U
 
 {
     "meals": [

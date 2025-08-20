@@ -84,7 +84,6 @@ CREATE TABLE convidado (
     nome VARCHAR(100) NOT NULL,
     funcao VARCHAR(50),
     origem VARCHAR(100),
-    data DATE not null,
     observacoes VARCHAR(255),
     criado_em TIMESTAMP DEFAULT now()
 );
@@ -94,7 +93,7 @@ CREATE TABLE refeicao (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     -- Tipo de pessoa que vai comer a refeicao
     tipo_pessoa refeicao_tipo_enum NOT NULL,
-    usuario_id UUID NOT NULL REFERENCES perfil(user_id) ON DELETE CASCADE,
+    usuario_id UUID REFERENCES perfil(user_id) ON DELETE CASCADE,
     hospede_id UUID REFERENCES hospede(id) ON DELETE CASCADE,
     convidado_id UUID REFERENCES convidado(id) ON DELETE CASCADE,
 

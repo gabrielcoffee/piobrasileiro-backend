@@ -14,21 +14,15 @@ export async function getCommonPerfil(req, res) {
             WHERE ua.id = $1
             `, [userId]);
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({ 
-                message: 'Perfil not found' 
-            })
-        }
-
         return res.status(200).json({
-            message: 'Perfil fetched successfully',
-            data: result.rows[0]
-        })
+            message: result.rows.length > 0 ? 'Perfil fetched successfully' : 'Perfil not found',
+            data: result.rows[0] || null
+        });
     } catch (error) {
         console.log(error);
         return res.status(403).json({
             message: 'There was an error fetching the perfil'
-        })
+        });
     }
 }
 
@@ -151,36 +145,49 @@ export async function updateUserPassword(req, res) {
     }
 }
 
+// Gets all the meals from ONLY the user from the week
 export async function getUserMeals(req, res) {
 
     const userId = req.userId;
     const { monday, sunday } = getCurrentWeekDates();
 
     try {
+        const convidadoResult = await pool.query(
+            'SELECT id, nome FROM convidado WHERE anfitriao_id = $1',
+            [userId]
+        );
+
+        const convidadoIds = convidadoResult.rows.map(convidado => convidado.id);
+
         const query = `
-            SELECT * FROM refeicao 
+            SELECT r.*, c.nome AS convidado_nome
+            FROM refeicao r
+            LEFT JOIN convidado c
+            ON r.convidado_id = c.id
             WHERE data >= $1 
             AND data <= $2
-            AND usuario_id = $3
+            AND (
+                (tipo_pessoa = 'usuario' AND usuario_id = $3)
+                OR
+                (tipo_pessoa = 'convidado' AND convidado_id = ANY($4))
+            )
         `;
 
         const result = await pool.query(
             query,
-            [monday, sunday, userId]
+            [monday, sunday, userId, convidadoIds]
         );
 
-        if (result.rows.length === 0){
-            return res.status(404).json({
-                message: "No meals found"
-            })
-        }
+        const userMeals = result.rows.filter(meal => meal.tipo_pessoa === 'usuario');
+        const guestMeals = result.rows.filter(meal => meal.tipo_pessoa === 'convidado');
 
         return res.status(200).json({
-            message: "Successfully fetched meals",
+            message: result.rows.length > 0 ? "Successfully fetched meals" : "No meals found",
             data: {
-                meals: result.rows
+                userMeals: userMeals,
+                guestMeals: guestMeals
             }
-        })
+        });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ 
@@ -287,5 +294,211 @@ export async function upsertMeals(req, res) {
         return res.status(404).json({
             message: "Failed to create meals"
         })
+    }
+}
+
+export async function getGuestMeals(req, res) {
+    const userId = req.userId;
+    const { monday, sunday } = getCurrentWeekDates();
+
+    try {
+        const convidadoResult = await pool.query(
+            'SELECT id FROM convidado WHERE anfitriao_id = $1',
+            [userId]
+        );
+
+        const convidadoIds = convidadoResult.rows.map(convidado => convidado.id);
+
+        const query = `
+            SELECT r.*, c.nome AS convidado_nome
+            FROM refeicao r
+            LEFT JOIN convidado c
+            ON r.convidado_id = c.id
+            WHERE data >= $1 
+            AND data <= $2
+            AND tipo_pessoa = 'convidado'
+            AND convidado_id = ANY($3)
+        `;
+
+        const result = await pool.query(
+            query,
+            [monday, sunday, convidadoIds]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(200).json({
+                message: "No guest meals found",
+                data: {
+                    guestMeals: []
+                }
+            });
+        }
+
+        return res.status(200).json({
+            message: "Successfully fetched guest meals",
+            data: {
+                guestMeals: result.rows
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: 'Failed to fetch guest meals'
+        });
+    }
+}
+
+export async function createGuestMeal(req, res) {
+    const userId = req.userId;
+    const { data, nome, funcao, origem } = req.body;
+
+    console.log(req.body);
+
+    try {
+        // First, create the convidado
+        const convidadoQuery = `
+            INSERT INTO convidado (anfitriao_id, nome, funcao, origem)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id
+        `;
+
+        const convidadoResult = await pool.query(
+            convidadoQuery,
+            [userId, nome, funcao, origem]
+        );
+
+        console.log(convidadoResult.rows);
+
+        if (convidadoResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Failed to create convidado"
+            });
+        }
+
+        const convidadoId = convidadoResult.rows[0].id;
+
+        // Then, create the meal for the convidado
+        const mealQuery = `
+            INSERT INTO refeicao (tipo_pessoa, convidado_id, data, almoco_colegio)
+            VALUES ('convidado', $1, $2, true)
+            RETURNING *
+        `;
+
+        const mealResult = await pool.query(
+            mealQuery,
+            [convidadoId, data]
+        );
+
+        console.log(mealResult.rows);
+
+        if (mealResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Failed to create guest meal"
+            });
+        }
+
+        return res.status(200).json({
+            message: "Guest meal created successfully",
+            data: {
+                guestMeal: mealResult.rows[0]
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: 'Failed to create guest meal'
+        });
+    }
+}
+
+export async function deleteGuestMeal(req, res) {
+    
+    const { id } = req.params;
+
+    try {
+        // First, get the convidado_id from the meal
+        const getConvidadoQuery = `
+            SELECT convidado_id FROM refeicao
+            WHERE id = $1
+        `;
+
+        const convidadoResult = await pool.query(
+            getConvidadoQuery,
+            [id]
+        );
+
+        if (convidadoResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Meal not found"
+            });
+        }
+
+        const convidadoId = convidadoResult.rows[0].convidado_id;
+
+        // Delete the meal
+        const deleteMealQuery = `
+            DELETE FROM refeicao
+            WHERE id = $1
+            RETURNING *
+        `;
+
+        const mealResult = await pool.query(
+            deleteMealQuery,
+            [id]
+        );
+
+        if (mealResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Failed to delete meal"
+            });
+        }
+
+        // Delete the convidado
+        const deleteConvidadoQuery = `
+            DELETE FROM convidado
+            WHERE id = $1
+            RETURNING *
+        `;
+
+        const convidadoDeleteResult = await pool.query(
+            deleteConvidadoQuery,
+            [convidadoId]
+        );
+
+        if (convidadoDeleteResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Failed to delete convidado"
+            });
+        }
+
+        return res.status(200).json({
+            message: "Guest meal and convidado deleted successfully",
+            data: {
+                deletedMeal: mealResult.rows[0],
+                deletedConvidado: convidadoDeleteResult.rows[0]
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: 'Failed to delete guest meal and convidado'
+        });
+    }
+}
+
+export async function getGuests(req, res) {
+    try {
+        const result = await pool.query(`SELECT * FROM hospede ORDER BY criado_em DESC`);
+        return res.status(200).json({ 
+            message: result.rows.length > 0 ? 'Guests fetched successfully' : 'No guests found',
+            data: {
+                guests: result.rows
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ 
+            message: 'Failed to fetch guests' 
+        });
     }
 }

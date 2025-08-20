@@ -123,14 +123,8 @@ export async function getUsersAndPerfil(req, res) {
             query
         );
 
-        if (result.rows.length === 0){
-            return res.status(404).json({
-                message: "No users found"
-            })
-        }
-
         return res.status(200).json({
-            message: "Successfully fetched users",
+            message: result.rows.length > 0 ? "Successfully fetched users" : "No users found",
             data: result.rows
         })
 
@@ -157,21 +151,15 @@ export async function getUserAndPerfil(req, res) {
             [userId]
         );
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({
-                message: "User not found"
-            })
-        }
-
         return res.status(200).json({
-            message: "Successfully fetched user",
-            data: result.rows[0]
-        })
+            message: result.rows.length > 0 ? "Successfully fetched user" : "User not found",
+            data: result.rows[0] || null
+        });
     } catch (error) {
         console.log(error);
         return res.json({
             message: "Failed to fetch user"
-        })
+        });
     }
 }
 
@@ -353,19 +341,13 @@ export async function getMeals(req, res) {
             totalJantaColegio: result.rows.filter(meal => meal.janta_colegio).length,
         };
 
-        if (result.rows.length === 0){
-            return res.status(404).json({
-                message: "No meals found"
-            })
-        }
-
         return res.status(200).json({
-            message: "Successfully fetched meals",
+            message: result.rows.length > 0 ? "Successfully fetched meals" : "No meals found",
             data: {
                 meals: result.rows,
                 quantityData: quantityData
             }
-        })
+        });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ 
@@ -573,12 +555,9 @@ export async function getAccommodation(req, res) {
     
     try {
         const result = await pool.query(`SELECT * FROM hospedagem WHERE id = $1`, [accommodationId]);
-        if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'Accommodation not found' 
-        });
-        }
         return res.status(200).json({ 
-            message: 'Accommodation fetched successfully', data: result.rows[0] 
+            message: result.rows.length > 0 ? 'Accommodation fetched successfully' : 'Accommodation not found',
+            data: result.rows[0] || null
         });
     } catch (error) {
         console.error(error);
@@ -699,13 +678,8 @@ export async function getRooms(req, res) {
             [startDate || monday, endDate || sunday]
         );
 
-        if (result.rows.length === 0){
-            return res.status(404).json({
-                message: "No rooms found"
-            })
-        }
         return res.status(200).json({
-            message: 'Rooms fetched successfully',
+            message: result.rows.length > 0 ? 'Rooms fetched successfully' : 'No rooms found',
             data: {
                 rooms: result.rows
             }
@@ -723,7 +697,7 @@ export async function getGuests(req, res) {
     try {
         const result = await pool.query(`SELECT * FROM hospede ORDER BY criado_em DESC`);
         return res.status(200).json({ 
-            message: 'Guests fetched successfully', 
+            message: result.rows.length > 0 ? 'Guests fetched successfully' : 'No guests found',
             data: {
                 guests: result.rows
             }
@@ -831,7 +805,7 @@ export async function getRequests(req, res) {
     try {
         const result = await pool.query(`SELECT * FROM solicitacao ORDER BY criado_em DESC`);
         return res.status(200).json({ 
-            message: 'Requests fetched successfully', 
+            message: result.rows.length > 0 ? 'Requests fetched successfully' : 'No requests found',
             data: {
                 requests: result.rows
             }

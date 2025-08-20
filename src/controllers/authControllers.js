@@ -72,3 +72,32 @@ export async function LoginUser(req, res) {
         res.sendStatus(503);
     }
 }
+
+export async function emailForgotPassword(req, res) {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({
+            message: 'Email is required'
+        })
+    }
+
+    try {
+        const result = await pool.query(`SELECT * FROM user_auth WHERE email = $1`, [email]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                message: 'No user found with this email'
+            })
+        }
+
+        return res.status(200).json({
+            message: "Email sent successfully",
+        })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: 'Failed to send email'
+        });
+    }
+}
