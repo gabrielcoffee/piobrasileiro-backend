@@ -34,6 +34,22 @@ POST http://localhost:3003/admin/users
 content-type: application/json
 
 {
+    "email": "comum@comum.com",
+    "password": "Bielf1234-",
+    "nome_completo": "comum da silva",
+    "data_nasc": "1990-01-01",
+    "genero": "m",
+    "funcao": "comum",
+    "num_documento": "1234567890",
+    "tipo_documento": "cpf",
+    "avatar_url": "https://static.vecteezy.com/ti/fotos-gratis/t1/6847951-headshot-retrato-de-homem-senior-no-armazem-idoso-caucasiano-velho-foto.jpg"
+}
+
+### Create a new admin user
+POST http://localhost:3003/admin/users
+content-type: application/json
+
+{
     "email": "admin@admin.com",
     "password": "Bielf1234-",
     "nome_completo": "admin da silva",

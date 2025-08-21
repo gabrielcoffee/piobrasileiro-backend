@@ -17,7 +17,7 @@ export async function createUserAndPerfil(req, res) {
         funcao,
         num_documento,
         tipo_documento,
-        avatar_url
+        avatar_image_data
     } = req.body;
 
     // Validation
@@ -65,9 +65,9 @@ export async function createUserAndPerfil(req, res) {
 
             // 2. Create perfil record
             const perfilResult = await client.query(
-                `INSERT INTO perfil (user_id, nome_completo, data_nasc, genero, funcao, num_documento, tipo_documento, avatar_url) 
+                `INSERT INTO perfil (user_id, nome_completo, data_nasc, genero, funcao, num_documento, tipo_documento, avatar_image_data) 
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-                [userId, nome_completo, data_nasc, genero, funcao, num_documento, tipo_documento, avatar_url]
+                [userId, nome_completo, data_nasc, genero, funcao, num_documento, tipo_documento, avatar_image_data]
             );
 
             await client.query('COMMIT');
@@ -165,14 +165,14 @@ export async function getUserAndPerfil(req, res) {
 
 export async function updateUserAndPerfil(req, res) {
     const { userId } = req.params;
-    const { email, tipo_usuario, nome_completo, funcao, data_nasc, genero, num_documento, tipo_documento, avatar_url } = req.body;
+    const { email, tipo_usuario, nome_completo, funcao, data_nasc, genero, num_documento, tipo_documento } = req.body;
 
     try {
         const result = await pool.query(
-            `UPDATE user_auth SET email = $1, tipo_usuario = $2, nome_completo = $3, funcao = $4, data_nasc = $5, genero = $6, num_documento = $7, tipo_documento = $8, avatar_url = $9
-            WHERE id = $10
+            `UPDATE user_auth SET email = $1, tipo_usuario = $2, nome_completo = $3, funcao = $4, data_nasc = $5, genero = $6, num_documento = $7, tipo_documento = $8
+            WHERE id = $9
             RETURNING *`,
-            [email, tipo_usuario, nome_completo, funcao, data_nasc, genero, num_documento, tipo_documento, avatar_url, userId]
+            [email, tipo_usuario, nome_completo, funcao, data_nasc, genero, num_documento, tipo_documento, userId]
         );
     
         if (result.rows.length === 0) {
@@ -193,6 +193,34 @@ export async function updateUserAndPerfil(req, res) {
         })
     }
 }
+
+export async function updateUserAvatar(req, res) {
+    const { userId } = req.params;
+    const avatar_image_data = req.file.buffer;
+
+    try {
+        const result = await pool.query(`UPDATE perfil SET avatar_image_data = $1 WHERE user_id = $2 returning *`, [avatar_image_data, userId]);
+
+        if (result.rows.length === 0) {
+            return res.status(400).json({
+                message: "User not found"
+            })
+        }
+
+        return res.status(200).json({
+            message: "Avatar updated successfully",
+            data: {
+                avatar: avatar_image_data
+            }
+        })
+    } catch (error) {
+        console.log(error);
+        return res.status(403).json({
+            message: "There was an error updating the user avatar"
+        })
+    }
+}
+
 
 export async function activateUsers(req, res) {
     const { userIds } = req.body;

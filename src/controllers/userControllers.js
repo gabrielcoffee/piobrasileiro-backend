@@ -8,7 +8,7 @@ export async function getCommonPerfil(req, res) {
 
     try {
         const result = await pool.query(`
-            SELECT ua.tipo_usuario AS role, p.avatar_url AS avatar, p.nome_completo AS fullname, ua.email AS email
+            SELECT ua.tipo_usuario AS role, p.avatar_image_data AS avatar, p.nome_completo AS fullname, ua.email AS email
             FROM user_auth ua
             JOIN perfil p on ua.id = p.user_id
             WHERE ua.id = $1
@@ -91,6 +91,8 @@ export async function updateUserPassword(req, res) {
             [userId]
         )
 
+        console.log(result.rows);
+
         if (result.rows.length === 0) {
             return res.status(404).json({
                 message: "User not found to change password"
@@ -123,12 +125,19 @@ export async function updateUserPassword(req, res) {
             UPDATE user_auth
             SET password = $1
             WHERE id = $2
+            returning *
         `;
 
         const resultChange = await pool.query(
             queryChangePassword,
             [newPasswordHashed, userId]
         )
+
+        if (resultChange.rowCount === 0) {
+            return res.status(400).json({
+                message: "Failed to change password"
+            })
+        }
 
         return res.status(200).json({
             message: "Successfully changed user password",
@@ -352,8 +361,6 @@ export async function createGuestMeal(req, res) {
     const userId = req.userId;
     const { data, nome, funcao, origem } = req.body;
 
-    console.log(req.body);
-
     try {
         // First, create the convidado
         const convidadoQuery = `
@@ -367,7 +374,6 @@ export async function createGuestMeal(req, res) {
             [userId, nome, funcao, origem]
         );
 
-        console.log(convidadoResult.rows);
 
         if (convidadoResult.rows.length === 0) {
             return res.status(404).json({
@@ -388,8 +394,6 @@ export async function createGuestMeal(req, res) {
             mealQuery,
             [convidadoId, data]
         );
-
-        console.log(mealResult.rows);
 
         if (mealResult.rows.length === 0) {
             return res.status(404).json({
@@ -499,6 +503,64 @@ export async function getGuests(req, res) {
         console.error(error);
         return res.status(500).json({ 
             message: 'Failed to fetch guests' 
+        });
+    }
+}
+
+export async function emailForgotPassword(req, res) {
+    const { email } = req.body;
+
+    try {
+        const result = await pool.query(`SELECT * FROM user_auth WHERE email = $1`, [email]);
+
+        if (result.rows.length === 0) {
+            return res.status(400).json({
+                message: "Failed to find user with this email"
+            });
+        }
+
+        return res.status(200).json({
+            message: "Email sent successfully",
+            data: {
+                email: email
+            }
+        })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: 'Failed to send email'
+        });
+    }
+}
+
+export async function updatePerfilAvatar(req, res) {
+    const userId = req.userId;
+    const avatar_image_data = req.file.buffer;
+
+    console.log(avatar_image_data);
+
+    try {
+        const result = await pool.query(
+            `UPDATE perfil SET avatar_image_data = $1 WHERE user_id = $2 returning *`,
+            [avatar_image_data, userId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(400).json({
+                message: "Failed to update the profile avatar"
+            });
+        }
+
+        return res.status(200).json({
+            message: "Avatar updated successfully",
+            data: {
+                avatar: avatar_image_data
+            }
+        })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: 'Failed to update avatar'
         });
     }
 }

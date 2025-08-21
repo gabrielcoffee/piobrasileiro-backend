@@ -25,8 +25,10 @@ import {
   updateGuest,
   deleteGuest,
   getRequests,
-  visualizeRequest
+  visualizeRequest,
+  updateUserAvatar
 } from '../controllers/adminControllers.js';
+import multerMiddleware from '../middleware/multerMiddleware.js';
 
 const router = express.Router();
 
@@ -35,6 +37,8 @@ router.get('/users', authMiddleware, adminMiddleware, getUsersAndPerfil);
 router.get('/users/:userId', authMiddleware, adminMiddleware, getUserAndPerfil);
 router.post('/users', authMiddleware, adminMiddleware, createUserAndPerfil);
 router.put('/users/:userId', authMiddleware, adminMiddleware, updateUserAndPerfil);
+router.put('/users/:userId/avatar', authMiddleware, adminMiddleware, multerMiddleware, updateUserAvatar);
+
 // Multiple users actions
 router.post('/activate_users', authMiddleware, adminMiddleware, activateUsers);
 router.post('/deactivate_users', authMiddleware, adminMiddleware, deactivateUsers);

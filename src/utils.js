@@ -82,7 +82,7 @@ export function sqlValuesString(array, num_columns) {
 export async function getUserLoginData(userId) {
     // Get profile
     const profileQuery = `
-        SELECT p.avatar_url, p.nome_completo, ua.email
+        SELECT p.avatar_image_data, p.nome_completo, ua.email
         FROM user_auth ua
         JOIN perfil p on ua.id = p.user_id
         WHERE ua.id = $1

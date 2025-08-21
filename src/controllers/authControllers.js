@@ -42,7 +42,7 @@ export async function LoginUser(req, res) {
 
         // Base user data
         const userDataQuery = `
-            SELECT p.avatar_url AS avatar,
+            SELECT p.avatar_image_data AS avatar,
                 ua.email AS email,
                 p.nome_completo AS fullname,
                 ua.tipo_usuario AS role

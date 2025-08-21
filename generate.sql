@@ -29,7 +29,7 @@ CREATE TABLE perfil (
   funcao varchar(100),
   num_documento VARCHAR(20),
   tipo_documento tipo_documento_enum,
-  avatar_url TEXT,
+  avatar_image_data BYTEA,
   observacoes VARCHAR(255),
   criado_em TIMESTAMP DEFAULT now()
 );
@@ -110,6 +110,14 @@ CREATE TABLE refeicao (
         (tipo_pessoa = 'convidado' AND usuario_id IS NULL AND hospede_id IS NULL AND convidado_id IS NOT NULL)
     )
 );
+
+CREATE TABLE password_reset (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES user_auth(id) ON DELETE CASCADE,
+    token_hash VARCHAR(255) NOT NULL,
+    expires_at TIMESTAMP DEFAULT now() + INTERVAL '1 hour'
+    created_at TIMESTAMP DEFAULT now(),
+)
 
 -- Function to manage occupied room dates
 CREATE OR REPLACE FUNCTION manage_quarto_ocupado()
