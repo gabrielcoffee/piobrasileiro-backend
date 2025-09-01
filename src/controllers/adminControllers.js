@@ -363,18 +363,36 @@ export async function deleteUsers(req, res) {
 // MEALS (refeicao)
 export async function getMeals(req, res) {
 
-    const { monday, sunday } = getCurrentWeekDates();
-
     try {
-
         const query = `
-        SELECT * FROM refeicao 
-        WHERE data >= $1 
-        AND data <= $2
-        ORDER BY data ASC
+        SELECT 
+            r.data,
+            r.tipo_pessoa,
+            r.almoco_colegio,
+            r.almoco_levar,
+            r.janta_colegio,
+            p.avatar_image_data,
+            
+            CASE 
+                WHEN r.tipo_pessoa = 'usuario' THEN p.nome_completo
+                WHEN r.tipo_pessoa = 'hospede' THEN h.nome
+                WHEN r.tipo_pessoa = 'convidado' THEN c.nome
+            END AS nome,
+            
+            CASE 
+                WHEN r.tipo_pessoa = 'usuario' THEN p.funcao
+                WHEN r.tipo_pessoa = 'hospede' THEN h.funcao
+                WHEN r.tipo_pessoa = 'convidado' THEN c.funcao
+            END AS funcao
+            
+        FROM refeicao r
+        LEFT JOIN perfil p ON r.usuario_id = p.user_id AND r.tipo_pessoa = 'usuario'
+        LEFT JOIN hospede h ON r.hospede_id = h.id AND r.tipo_pessoa = 'hospede'
+        LEFT JOIN convidado c ON r.convidado_id = c.id AND r.tipo_pessoa = 'convidado'
+        ORDER BY r.data DESC;
         `;
 
-        const result = await pool.query(query, [monday, sunday]);
+        const result = await pool.query(query);
 
         // Conseguir numero total de refeicoes, almoco_colegio, almoco_levar, janta_colegio, observacoes
 
