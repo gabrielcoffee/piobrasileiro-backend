@@ -162,7 +162,7 @@ export async function getUserAndPerfil(req, res) {
 
 export async function updateUserAndPerfil(req, res) {
     const { userId } = req.params;
-    const { email, tipo_usuario, nome_completo, funcao, data_nasc, genero, num_documento, tipo_documento } = req.body;
+    const { email, tipo_usuario, nome_completo, funcao, data_nasc, genero, num_documento, tipo_documento, observacoes } = req.body;
 
     // Create a client to connect to database
     const client = await pool.connect();
@@ -187,10 +187,10 @@ export async function updateUserAndPerfil(req, res) {
 
         // 2. Update perfil table (fields that belong to it)
         const perfilResult = await client.query(
-            `UPDATE perfil SET nome_completo = $1, funcao = $2, data_nasc = $3, genero = $4, num_documento = $5, tipo_documento = $6
-             WHERE user_id = $7
+            `UPDATE perfil SET nome_completo = $1, funcao = $2, data_nasc = $3, genero = $4, num_documento = $5, tipo_documento = $6, observacoes = $7
+             WHERE user_id = $8
              RETURNING *`,
-            [nome_completo, funcao, data_nasc, genero, num_documento, tipo_documento, userId]
+            [nome_completo, funcao, data_nasc, genero, num_documento, tipo_documento, observacoes, userId]
         );
 
         await client.query('COMMIT');
@@ -913,7 +913,7 @@ export async function getProfile(req, res) {
 
 export async function updateProfile(req, res) {
     const userId = req.userId;
-    const { email, tipo_usuario, nome_completo, funcao, data_nasc, genero, num_documento, tipo_documento } = req.body;
+    const { email, tipo_usuario, nome_completo, funcao, data_nasc, genero, num_documento, tipo_documento, observacoes } = req.body;
 
     // Create a client to connect to database
     const client = await pool.connect();
@@ -938,10 +938,10 @@ export async function updateProfile(req, res) {
 
         // 2. Update perfil table (fields that belong to it)
         const perfilResult = await client.query(
-            `UPDATE perfil SET nome_completo = $1, funcao = $2, data_nasc = $3, genero = $4, num_documento = $5, tipo_documento = $6
-             WHERE user_id = $7
+            `UPDATE perfil SET nome_completo = $1, funcao = $2, data_nasc = $3, genero = $4, num_documento = $5, tipo_documento = $6, observacoes = $7
+             WHERE user_id = $8
              RETURNING *`,
-            [nome_completo, funcao, data_nasc, genero, num_documento, tipo_documento, userId]
+            [nome_completo, funcao, data_nasc, genero, num_documento, tipo_documento, observacoes, userId]
         );
 
         await client.query('COMMIT');
