@@ -1,25 +1,5 @@
 import pool from "./db.js";
 
-// Unused since it's a simple app with about 150 users, pagination might be necessary if this would scale to 
-// Hundreds of thousands of users, then pagination could be used to improve performance
-export async function calculatePagination(currentPage, itemsPerPage = 8, db_table) {
-
-    // Query the database to get the number of entities in the list
-    const countResult = await pool.query('SELECT COUNT(*) FROM $1 WHERE active = TRUE', [db_table]);
-    const totalItems = parseInt(countResult.rows[0].count);
-
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-    const safePage = Math.max(1, Math.min(currentPage, totalPages));
-    const offset = (safePage - 1) * itemsPerPage;
-    
-    return {
-        safePage,
-        totalPages,
-        offset,
-        totalItems
-    };
-}
-
 export function getCurrentWeekDates() {
     const today = new Date();
     const dayOfWeek = today.getDay();

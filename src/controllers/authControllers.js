@@ -64,7 +64,7 @@ export async function LoginUser(req, res) {
         res.status(200).json({
             message: 'User logged in successfully',
             token: token,
-            data: result.rows[0]
+            data: userDataResult.rows[0]
         });
 
     } catch (error) {

@@ -91,8 +91,6 @@ export async function updateUserPassword(req, res) {
             [userId]
         )
 
-        console.log(result.rows);
-
         if (result.rows.length === 0) {
             return res.status(404).json({
                 message: "User not found to change password"

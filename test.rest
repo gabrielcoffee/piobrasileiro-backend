@@ -39,10 +39,11 @@ content-type: application/json
     "nome_completo": "comum da silva",
     "data_nasc": "1990-01-01",
     "genero": "m",
-    "funcao": "comum",
+    "tipo_usuario": "comum",
+    "funcao": "Padre",
     "num_documento": "1234567890",
     "tipo_documento": "cpf",
-    "avatar_url": "https://static.vecteezy.com/ti/fotos-gratis/t1/6847951-headshot-retrato-de-homem-senior-no-armazem-idoso-caucasiano-velho-foto.jpg"
+    "avatar_image_data": "https://static.vecteezy.com/ti/fotos-gratis/t1/6847951-headshot-retrato-de-homem-senior-no-armazem-idoso-caucasiano-velho-foto.jpg"
 }
 
 ### Create a new admin user
@@ -55,7 +56,8 @@ content-type: application/json
     "nome_completo": "admin da silva",
     "data_nasc": "1990-01-01",
     "genero": "m",
-    "funcao": "admin",
+    "tipo_usuario": "admin",
+    "funcao": "Padre",
     "num_documento": "1234567890",
     "tipo_documento": "cpf",
     "avatar_url": "https://static.vecteezy.com/ti/fotos-gratis/t1/6847951-headshot-retrato-de-homem-senior-no-armazem-idoso-caucasiano-velho-foto.jpg"
@@ -97,4 +99,14 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjVlZjg5YTQ3L
             "janta_colegio": false
         }
     ]
+}
+
+
+### Update Avatar
+PUT http://localhost:3000/perfil/avatar
+Authorization: Bearer YOUR_JWT_TOKEN
+Content-Type: application/json
+
+{
+    "avatar_image_data": "BASE64_ENCODED_IMAGE_DATA"
 }

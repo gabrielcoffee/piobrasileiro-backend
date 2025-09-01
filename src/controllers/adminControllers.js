@@ -1,7 +1,6 @@
 import pool from '../db.js';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { calculatePagination, getCurrentWeekDates, isPasswordValid } from '../utils.js';
+import { getCurrentWeekDates, isPasswordValid } from '../utils.js';
 
 export async function createUserAndPerfil(req, res) {
     const {
@@ -115,7 +114,6 @@ export async function getUsersAndPerfil(req, res) {
             SELECT p.*, ua.email, ua.tipo_usuario, ua.active
             FROM user_auth ua
             JOIN perfil p ON p.user_id = ua.id
-            WHERE ua.active = TRUE
             ORDER BY ua.criado_em DESC
         `;
 
@@ -142,11 +140,10 @@ export async function getUserAndPerfil(req, res) {
     try {
         const result = await pool.query(
             `
-            SELECT p.*, ua.active, ua.email, ua.tipo_usuario
+            SELECT p.*, ua.email, ua.tipo_usuario
             FROM user_auth ua
             JOIN perfil p ON p.user_id = ua.id
             WHERE ua.id = $1
-            AND active = TRUE
             `,
             [userId]
         );
@@ -167,30 +164,53 @@ export async function updateUserAndPerfil(req, res) {
     const { userId } = req.params;
     const { email, tipo_usuario, nome_completo, funcao, data_nasc, genero, num_documento, tipo_documento } = req.body;
 
+    // Create a client to connect to database
+    const client = await pool.connect();
+
     try {
-        const result = await pool.query(
-            `UPDATE user_auth SET email = $1, tipo_usuario = $2, nome_completo = $3, funcao = $4, data_nasc = $5, genero = $6, num_documento = $7, tipo_documento = $8
-            WHERE id = $9
-            RETURNING *`,
-            [email, tipo_usuario, nome_completo, funcao, data_nasc, genero, num_documento, tipo_documento, userId]
+        await client.query('BEGIN');
+
+        // 1. Update user_auth table (only fields that belong to it)
+        const userAuthResult = await client.query(
+            `UPDATE user_auth SET email = $1, tipo_usuario = $2
+             WHERE id = $3
+             RETURNING *`,
+            [email, tipo_usuario, userId]
         );
-    
-        if (result.rows.length === 0) {
+
+        if (userAuthResult.rows.length === 0) {
+            await client.query('ROLLBACK');
             return res.status(404).json({
                 message: "User not found"
-            })
+            });
         }
+
+        // 2. Update perfil table (fields that belong to it)
+        const perfilResult = await client.query(
+            `UPDATE perfil SET nome_completo = $1, funcao = $2, data_nasc = $3, genero = $4, num_documento = $5, tipo_documento = $6
+             WHERE user_id = $7
+             RETURNING *`,
+            [nome_completo, funcao, data_nasc, genero, num_documento, tipo_documento, userId]
+        );
+
+        await client.query('COMMIT');
 
         return res.status(200).json({
             message: "Successfully updated user",
-            data: result.rows[0]
-        })
+            data: {
+                user: userAuthResult.rows[0],
+                perfil: perfilResult.rows[0]
+            }
+        });
 
     } catch (error) {
+        await client.query('ROLLBACK');
         console.log(error);
-        return res.status(403).json({
-            message: "There was an error updating the user profile"
-        })
+        return res.status(500).json({
+            message: "Failed to update user and perfil"
+        });
+    } finally {
+        client.release();
     }
 }
 
@@ -222,12 +242,12 @@ export async function updateUserAvatar(req, res) {
 }
 
 
-export async function activateUsers(req, res) {
-    const { userIds } = req.body;
+export async function toggleActiveUser(req, res) {
+    const { userId } = req.body;
 
-    if (!userIds || userIds.length === 0) {
+    if (!userId) {
         return res.status(400).json({ 
-            message: 'User IDs are required' 
+            message: 'User ID is required' 
         });
     }
 
@@ -235,30 +255,26 @@ export async function activateUsers(req, res) {
     // ::uuid[] is a type cast to convert the $1 parameter to an array of UUIDs
     const query = `
         UPDATE user_auth 
-        SET active = TRUE 
-        WHERE id = ANY($1::uuid[])
-        RETURNING *
+        SET active = NOT active 
+        WHERE id = $1
     `;
 
     try {
-        const result = await pool.query(query, [userIds]);
+        const result = await pool.query(query, [userId]);
 
         if (result.rowCount === 0) {
             return res.status(404).json({ 
-                message: 'No users were activated' 
+                message: 'User not found' 
             });
         }
 
         return res.json({ 
-            message: "Users activated successfully", 
-            data: {
-                users: result.rows
-            }
+            message: "User active status toggled successfully", 
         })
     } catch (error) {
         console.log(error);
         return res.status(403).json({
-            message: "There was an error activating the users"
+            message: "There was an error toggling the user active status"
         })
     }
 }
@@ -865,5 +881,86 @@ export async function visualizeRequest(req, res) {
         return res.status(500).json({ 
             message: 'Failed to visualize request' 
         });
+    }
+}
+
+export async function getProfile(req, res) {
+
+    const userId = req.userId;
+
+    try {
+        const result = await pool.query(
+            `
+            SELECT p.*, ua.email, ua.tipo_usuario
+            FROM user_auth ua
+            JOIN perfil p ON p.user_id = ua.id
+            WHERE ua.id = $1
+            `,
+            [userId]
+        );
+
+        return res.status(200).json({
+            message: result.rows.length > 0 ? "Successfully fetched profile" : "Profile not found",
+            data: result.rows[0] || null
+        });
+    } catch (error) {
+        console.log(error);
+        return res.json({
+            message: "Failed to fetch profile"
+        });
+    }
+}
+
+export async function updateProfile(req, res) {
+    const userId = req.userId;
+    const { email, tipo_usuario, nome_completo, funcao, data_nasc, genero, num_documento, tipo_documento } = req.body;
+
+    // Create a client to connect to database
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        // 1. Update user_auth table (only fields that belong to it)
+        const userAuthResult = await client.query(
+            `UPDATE user_auth SET email = $1, tipo_usuario = $2
+             WHERE id = $3
+             RETURNING *`,
+            [email, tipo_usuario, userId]
+        );
+
+        if (userAuthResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({
+                message: "Profile not found"
+            });
+        }
+
+        // 2. Update perfil table (fields that belong to it)
+        const perfilResult = await client.query(
+            `UPDATE perfil SET nome_completo = $1, funcao = $2, data_nasc = $3, genero = $4, num_documento = $5, tipo_documento = $6
+             WHERE user_id = $7
+             RETURNING *`,
+            [nome_completo, funcao, data_nasc, genero, num_documento, tipo_documento, userId]
+        );
+
+        await client.query('COMMIT');
+
+        return res.status(200).json({
+            message: "Successfully updated profile",
+            data: {
+                user: userAuthResult.rows[0],
+                perfil: perfilResult.rows[0]
+            }
+        });
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.log(error);
+        return res.status(500).json({
+            message: "Failed to update profile"
+        });
+    } finally {
+        client.release();
     }
 }

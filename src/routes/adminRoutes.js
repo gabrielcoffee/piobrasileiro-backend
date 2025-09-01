@@ -3,7 +3,7 @@ import authMiddleware from '../middleware/authMiddleware.js';
 import adminMiddleware from '../middleware/adminMiddleware.js';
 import { 
   createUserAndPerfil,
-  activateUsers,
+  toggleActiveUser,
   deactivateUsers,
   deleteUsers,
   getUsersAndPerfil,
@@ -26,11 +26,17 @@ import {
   deleteGuest,
   getRequests,
   visualizeRequest,
-  updateUserAvatar
+  updateUserAvatar,
+  getProfile,
+  updateProfile
 } from '../controllers/adminControllers.js';
 import multerMiddleware from '../middleware/multerMiddleware.js';
 
 const router = express.Router();
+
+// Current logged admin user profile
+router.get('/profile', authMiddleware, adminMiddleware, getProfile);
+router.put('/profile', authMiddleware, adminMiddleware, updateProfile);
 
 // CRUD for user_auth and perfil
 router.get('/users', authMiddleware, adminMiddleware, getUsersAndPerfil);
@@ -40,9 +46,9 @@ router.put('/users/:userId', authMiddleware, adminMiddleware, updateUserAndPerfi
 router.put('/users/:userId/avatar', authMiddleware, adminMiddleware, multerMiddleware, updateUserAvatar);
 
 // Multiple users actions
-router.post('/activate_users', authMiddleware, adminMiddleware, activateUsers);
-router.post('/deactivate_users', authMiddleware, adminMiddleware, deactivateUsers);
-router.delete('/users', authMiddleware, adminMiddleware, deleteUsers);
+router.post('/users/toggle-active', authMiddleware, adminMiddleware, toggleActiveUser);
+router.post('/users/deactivate', authMiddleware, adminMiddleware, deactivateUsers);
+router.delete('/users/delete', authMiddleware, adminMiddleware, deleteUsers);
 
 // CRUD for refeicao
 router.get('/meals', authMiddleware, adminMiddleware, getMeals);
