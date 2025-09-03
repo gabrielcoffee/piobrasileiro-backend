@@ -372,6 +372,12 @@ export async function getMeals(req, res) {
             r.almoco_levar,
             r.janta_colegio,
             p.avatar_image_data,
+
+            CASE
+                WHEN r.tipo_pessoa = 'usuario' THEN p.observacoes
+                WHEN r.tipo_pessoa = 'hospede' THEN h.observacoes
+                WHEN r.tipo_pessoa = 'convidado' THEN c.observacoes
+            END AS observacoes,
             
             CASE 
                 WHEN r.tipo_pessoa = 'usuario' THEN p.nome_completo
