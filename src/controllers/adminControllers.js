@@ -366,12 +366,18 @@ export async function getMeals(req, res) {
     try {
         const query = `
         SELECT 
+            r.id,
             r.data,
             r.tipo_pessoa,
             r.almoco_colegio,
             r.almoco_levar,
             r.janta_colegio,
             p.avatar_image_data,
+
+            CASE
+                WHEN r.tipo_pessoa = 'hospede' THEN h.origem
+                WHEN r.tipo_pessoa = 'convidado' THEN c.origem
+            END AS origem,
 
             CASE
                 WHEN r.tipo_pessoa = 'usuario' THEN p.observacoes
@@ -389,12 +395,25 @@ export async function getMeals(req, res) {
                 WHEN r.tipo_pessoa = 'usuario' THEN p.funcao
                 WHEN r.tipo_pessoa = 'hospede' THEN h.funcao
                 WHEN r.tipo_pessoa = 'convidado' THEN c.funcao
-            END AS funcao
+            END AS funcao,
+
+                -- Add anfitriao information for convidados
+            CASE 
+                WHEN r.tipo_pessoa = 'convidado' THEN c.anfitriao_id
+                ELSE NULL
+            END AS anfitriao_id,
+
+            CASE 
+                WHEN r.tipo_pessoa = 'convidado' THEN p_anfitriao.nome_completo
+                ELSE NULL
+            END AS anfitriao_nome
             
         FROM refeicao r
         LEFT JOIN perfil p ON r.usuario_id = p.user_id AND r.tipo_pessoa = 'usuario'
         LEFT JOIN hospede h ON r.hospede_id = h.id AND r.tipo_pessoa = 'hospede'
         LEFT JOIN convidado c ON r.convidado_id = c.id AND r.tipo_pessoa = 'convidado'
+        -- Join to get anfitriao information for convidados
+        LEFT JOIN perfil p_anfitriao ON c.anfitriao_id = p_anfitriao.user_id AND r.tipo_pessoa = 'convidado'
         ORDER BY r.data DESC;
         `;
 
@@ -986,5 +1005,139 @@ export async function updateProfile(req, res) {
         });
     } finally {
         client.release();
+    }
+}
+
+export async function createGuestMeal(req, res) {
+    const { anfitriao_id, observacoes, data, nome, funcao, origem, almoco_colegio, almoco_levar, janta_colegio} = req.body;
+
+    try {
+        const anfitriao = anfitriao_id ? anfitriao_id : req.userId;
+
+        // First, create the convidado
+        const convidadoQuery = `
+            INSERT INTO convidado (anfitriao_id, nome, funcao, origem, observacoes)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING id
+        `;
+
+        const convidadoResult = await pool.query(
+            convidadoQuery,
+            [anfitriao, nome, funcao, origem, observacoes]
+        );
+
+
+        if (convidadoResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Failed to create convidado"
+            });
+        }
+
+        const convidadoId = convidadoResult.rows[0].id;
+
+        // Then, create the meal for the convidado
+        const mealQuery = `
+            INSERT INTO refeicao (tipo_pessoa, convidado_id, data, almoco_colegio, almoco_levar, janta_colegio)
+            VALUES ('convidado', $1, $2, $3, $4, $5)
+            RETURNING *
+        `;
+
+        const mealResult = await pool.query(
+            mealQuery,
+            [convidadoId, data, almoco_colegio, almoco_levar, janta_colegio]
+        );
+
+        if (mealResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Failed to create guest meal"
+            });
+        }
+
+        return res.status(200).json({
+            message: "Guest meal created successfully",
+            data: {
+                guestMeal: mealResult.rows[0]
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: 'Failed to create guest meal'
+        });
+    }
+}
+
+export async function deleteGuestMeal(req, res) {
+    
+    const { mealId } = req.params;
+
+    try {
+        // First, get the convidado_id from the meal
+        const getConvidadoQuery = `
+            SELECT convidado_id FROM refeicao
+            WHERE id = $1
+        `;
+
+        const convidadoResult = await pool.query(
+            getConvidadoQuery,
+            [mealId]
+        );
+
+        if (convidadoResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Meal not found"
+            });
+        }
+
+        const convidadoId = convidadoResult.rows[0].convidado_id;
+
+        // Delete the meal
+        const deleteMealQuery = `
+            DELETE FROM refeicao
+            WHERE id = $1
+            RETURNING *
+        `;
+
+        const mealResult = await pool.query(
+            deleteMealQuery,
+            [mealId]
+        );
+
+        if (mealResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Failed to delete meal"
+            });
+        }
+
+        // Delete the convidado
+        const deleteConvidadoQuery = `
+            DELETE FROM convidado
+            WHERE id = $1
+            RETURNING *
+        `;
+
+        const convidadoDeleteResult = await pool.query(
+            deleteConvidadoQuery,
+            [convidadoId]
+        );
+
+        if (convidadoDeleteResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Failed to delete convidado"
+            });
+        }
+
+        return res.status(200).json({
+            message: "Guest meal and convidado deleted successfully",
+            data: {
+                deletedMeal: mealResult.rows[0],
+                deletedConvidado: convidadoDeleteResult.rows[0]
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: 'Failed to delete guest meal and convidado'
+        });
     }
 }

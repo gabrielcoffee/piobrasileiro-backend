@@ -110,3 +110,14 @@ Content-Type: application/json
 {
     "avatar_image_data": "BASE64_ENCODED_IMAGE_DATA"
 }
+
+
+
+### Create new requests
+PUT http://localhost:3003/user/requests
+content-type: application/json
+{
+    "request_type": "request_type",
+    "request_description": "request_description",
+    "request_status": "request_status"
+}

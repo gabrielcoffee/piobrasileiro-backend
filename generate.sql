@@ -48,10 +48,10 @@ CREATE TABLE solicitacao (
 
 CREATE TABLE quarto (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    numero varchar(10) not null,
+    numero varchar(25) not null,
     capacidade INT not null
+    active boolean default true,
 );
-
 
 CREATE TABLE hospede (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

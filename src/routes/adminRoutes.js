@@ -28,7 +28,9 @@ import {
   visualizeRequest,
   updateUserAvatar,
   getProfile,
-  updateProfile
+  updateProfile,
+  createGuestMeal,
+  deleteGuestMeal
 } from '../controllers/adminControllers.js';
 import multerMiddleware from '../middleware/multerMiddleware.js';
 
@@ -56,6 +58,8 @@ router.get('/meals/:mealId', authMiddleware, adminMiddleware, getMeal);
 router.post('/meals', authMiddleware, adminMiddleware, createMeal);
 router.put('/meals/:mealId', authMiddleware, adminMiddleware, updateMeal);
 router.delete('/meals/:mealId', authMiddleware, adminMiddleware, deleteMeal);
+router.delete('/guestmeals/:mealId', authMiddleware, adminMiddleware, deleteGuestMeal);
+router.post('/guestmeals', authMiddleware, adminMiddleware, createGuestMeal);
 
 // CRUD for hospedagem
 router.get('/accommodations', authMiddleware, adminMiddleware, getAccommodations);
