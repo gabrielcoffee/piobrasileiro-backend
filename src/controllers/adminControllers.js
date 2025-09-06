@@ -373,6 +373,8 @@ export async function getMeals(req, res) {
             r.almoco_levar,
             r.janta_colegio,
             p.avatar_image_data,
+            r.usuario_id,
+            r.hospede_id,
 
             CASE
                 WHEN r.tipo_pessoa = 'hospede' THEN h.origem
@@ -397,7 +399,7 @@ export async function getMeals(req, res) {
                 WHEN r.tipo_pessoa = 'convidado' THEN c.funcao
             END AS funcao,
 
-                -- Add anfitriao information for convidados
+            -- Add anfitriao information for convidados
             CASE 
                 WHEN r.tipo_pessoa = 'convidado' THEN c.anfitriao_id
                 ELSE NULL
@@ -528,29 +530,68 @@ export async function createMeal(req, res) {
     }
 }
 
+export async function createUserMeal(req, res) {
+    const { userId } = req.params;
+    const { data, almoco_colegio, almoco_levar, janta_colegio } = req.body;
+
+    try {
+        const alreadyExists = await pool.query(
+            `SELECT * FROM refeicao WHERE usuario_id = $1 AND data = $2`,
+            [userId, data]
+        );
+        if (alreadyExists.rows.length > 0) {
+            return res.status(400).json({ 
+                message: 'Meal for this user and datealready exists' 
+            });
+        }
+
+        console.log('data:', data);
+        console.log('userId:', userId);
+        console.log('almoco_colegio:', almoco_colegio);
+        console.log('almoco_levar:', almoco_levar);
+        console.log('janta_colegio:', janta_colegio);
+
+        const result = await pool.query(
+            `INSERT INTO refeicao (tipo_pessoa, usuario_id, data, almoco_colegio, almoco_levar, janta_colegio)
+             VALUES ('usuario', $1, $2, $3, $4, $5)
+             RETURNING *`,
+            [userId, data, almoco_colegio, almoco_levar, janta_colegio]
+        );
+
+        return res.status(201).json({ 
+            message: 'Meal created successfully', 
+            data: {
+                meal: result.rows[0]
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ 
+            message: 'Failed to create meal' 
+        });
+    }
+}
+
 export async function updateMeal(req, res) {
     const { mealId } = req.params;
-    const { almoco_colegio, almoco_levar, janta_colegio, observacoes } = req.body;
+    const { almoco_colegio, almoco_levar, janta_colegio } = req.body;
 
     try {
         const result = await pool.query(
             `UPDATE refeicao
              SET almoco_colegio = COALESCE($1, almoco_colegio),
                  almoco_levar = COALESCE($2, almoco_levar),
-                 janta_colegio = COALESCE($3, janta_colegio),
-                 observacoes = COALESCE($4, observacoes)
-             WHERE id = $5
-             RETURNING *`,
+                 janta_colegio = COALESCE($3, janta_colegio)
+             WHERE id = $4`,
             [
-                typeof almoco_colegio === 'boolean' ? almoco_colegio : null,
-                typeof almoco_levar === 'boolean' ? almoco_levar : null,
-                typeof janta_colegio === 'boolean' ? janta_colegio : null,
-                observacoes ?? null,
+                almoco_colegio,
+                almoco_levar,
+                janta_colegio,
                 mealId,
             ]
         );
 
-        if (result.rows.length === 0) {
+        if (result.rowCount === 0) {
             return res.status(404).json({ 
                 message: 'Meal not found' 
             });
@@ -558,9 +599,6 @@ export async function updateMeal(req, res) {
 
         return res.status(200).json({ 
             message: 'Meal updated successfully', 
-            data: {
-                meal: result.rows[0]
-            }
         });
     } catch (error) {
         console.error(error);

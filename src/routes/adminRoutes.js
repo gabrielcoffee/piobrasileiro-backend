@@ -11,7 +11,7 @@ import {
   updateUserAndPerfil,
   getMeals,
   getMeal,
-  createMeal,
+  createUserMeal,
   updateMeal,
   deleteMeal,
   getAccommodations,
@@ -31,7 +31,7 @@ import {
   updateProfile,
   createGuestMeal,
   deleteGuestMeal,
-  editGuestMeal
+  editGuestMeal,
 } from '../controllers/adminControllers.js';
 import multerMiddleware from '../middleware/multerMiddleware.js';
 
@@ -56,7 +56,7 @@ router.delete('/users/delete', authMiddleware, adminMiddleware, deleteUsers);
 // CRUD for refeicao
 router.get('/meals', authMiddleware, adminMiddleware, getMeals);
 router.get('/meals/:mealId', authMiddleware, adminMiddleware, getMeal);
-router.post('/meals', authMiddleware, adminMiddleware, createMeal);
+router.post('/meals/:userId', authMiddleware, adminMiddleware, createUserMeal);
 router.put('/meals/:mealId', authMiddleware, adminMiddleware, updateMeal);
 router.delete('/meals/:mealId', authMiddleware, adminMiddleware, deleteMeal);
 router.delete('/guestmeals/:mealId', authMiddleware, adminMiddleware, deleteGuestMeal);
