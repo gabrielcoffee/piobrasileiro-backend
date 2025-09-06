@@ -30,7 +30,8 @@ import {
   getProfile,
   updateProfile,
   createGuestMeal,
-  deleteGuestMeal
+  deleteGuestMeal,
+  editGuestMeal
 } from '../controllers/adminControllers.js';
 import multerMiddleware from '../middleware/multerMiddleware.js';
 
@@ -60,6 +61,7 @@ router.put('/meals/:mealId', authMiddleware, adminMiddleware, updateMeal);
 router.delete('/meals/:mealId', authMiddleware, adminMiddleware, deleteMeal);
 router.delete('/guestmeals/:mealId', authMiddleware, adminMiddleware, deleteGuestMeal);
 router.post('/guestmeals', authMiddleware, adminMiddleware, createGuestMeal);
+router.put('/guestmeals/:mealId', authMiddleware, adminMiddleware, editGuestMeal);
 
 // CRUD for hospedagem
 router.get('/accommodations', authMiddleware, adminMiddleware, getAccommodations);

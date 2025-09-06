@@ -1141,3 +1141,57 @@ export async function deleteGuestMeal(req, res) {
         });
     }
 }
+
+export async function editGuestMeal(req, res) {
+    const { mealId } = req.params;
+    const { data, anfitriao_id, almoco_colegio, almoco_levar, janta_colegio, observacoes } = req.body;
+    
+    const client = await pool.connect();
+
+    try {
+
+        await client.query('BEGIN')
+
+        const mealResult = await client.query(
+            `UPDATE refeicao
+             SET data = $1, almoco_colegio = $2, almoco_levar = $3, janta_colegio = $4
+             WHERE id = $5
+             RETURNING convidado_id`,
+            [data, almoco_colegio, almoco_levar, janta_colegio, mealId]
+        );
+
+        if (mealResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({
+                message: 'Meal not found' 
+            });
+        }
+
+        const guestResult = await client.query(
+            `UPDATE convidado
+            SET observacoes = $1, anfitriao_id = $2
+            WHERE id = $3`,
+            [observacoes, anfitriao_id, mealResult.rows[0].convidado_id]
+        )
+
+        if (guestResult.rowCount === 0) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({
+                message: 'Guest not found' 
+            });
+        }
+
+        await client.query('COMMIT');
+
+        return res.status(200).json({
+            message: 'Guest meal and convidado edited successfully',
+        });
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.log('Não foi possîvel editar a refeicao do convidado, error:', error);
+        return res.status(500).json({
+            message: 'Failed to edit guest meal and convidado'
+        })
+    }
+}
