@@ -49,8 +49,8 @@ CREATE TABLE solicitacao (
 CREATE TABLE quarto (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     numero varchar(25) not null,
-    capacidade INT not null
-    active boolean default true,
+    capacidade INT not null,
+    active boolean default true
 );
 
 CREATE TABLE hospede (
@@ -174,5 +174,10 @@ CREATE TRIGGER hospedagem_ocupado_trigger
 -- Constraints
 ALTER TABLE refeicao ADD CONSTRAINT unique_user_date UNIQUE(usuario_id, data);
 
+create table datas_refeicao_bloqueadas  (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    data DATE NOT NULL,
+    criado_em TIMESTAMP DEFAULT now()
+);
 
-
+ALTER TABLE datas_refeicao_bloqueadas ADD CONSTRAINT unique_blocked_date UNIQUE(data);

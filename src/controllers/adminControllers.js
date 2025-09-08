@@ -541,15 +541,9 @@ export async function createUserMeal(req, res) {
         );
         if (alreadyExists.rows.length > 0) {
             return res.status(400).json({ 
-                message: 'Meal for this user and datealready exists' 
+                error: 'Usuário já possui refeição para esta data' 
             });
         }
-
-        console.log('data:', data);
-        console.log('userId:', userId);
-        console.log('almoco_colegio:', almoco_colegio);
-        console.log('almoco_levar:', almoco_levar);
-        console.log('janta_colegio:', janta_colegio);
 
         const result = await pool.query(
             `INSERT INTO refeicao (tipo_pessoa, usuario_id, data, almoco_colegio, almoco_levar, janta_colegio)
@@ -1231,5 +1225,88 @@ export async function editGuestMeal(req, res) {
         return res.status(500).json({
             message: 'Failed to edit guest meal and convidado'
         })
+    }
+}
+
+export async function getBlockedDates(req, res) {
+    try {
+        const result = await pool.query(`SELECT data FROM datas_refeicao_bloqueadas`);
+
+        return res.status(200).json({
+            message: result.rows.length > 0 ? 'Datas de refeição bloqueadas encontradas' : 'Não foi possível encontrar datas de refeição bloqueadas',
+            data: result.rows
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ 
+            message: 'Não foi possível encontrar datas de refeição bloqueadas' 
+        });
+    }
+}
+
+export async function addBlockedDates(req, res) {
+    const { datas } = req.body; 
+
+    console.log('datas:', datas);
+    
+    if (!datas || !Array.isArray(datas) || datas.length === 0) {
+        return res.status(400).json({
+            message: 'Array of dates is required'
+        });
+    }
+
+    try {
+        const result = await pool.query(
+            `INSERT INTO datas_refeicao_bloqueadas (data)
+             SELECT unnest($1::date[]) AS data
+             ON CONFLICT (data) DO NOTHING
+             RETURNING *`,
+            [datas]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(200).json({
+                message: 'All dates are already blocked'
+            });
+        }
+
+        return res.status(201).json({
+            message: 'Blocked dates added successfully',
+            data: result.rows
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ 
+            message: 'Failed to add blocked dates' 
+        });
+    }
+}
+
+export async function deleteBlockedDates(req, res) {
+    const { datas } = req.body;
+
+    try {
+
+        const result = await pool.query(`
+            DELETE FROM datas_refeicao_bloqueadas
+            WHERE data = ANY($1::date[])
+            RETURNING *`, [datas]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                message: 'No blocked dates were deleted' 
+            });
+        }
+
+        return res.status(200).json({
+            message: 'Blocked dates deleted successfully',
+            data: result.rows
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ 
+            message: 'Failed to delete blocked dates' 
+        });
     }
 }
