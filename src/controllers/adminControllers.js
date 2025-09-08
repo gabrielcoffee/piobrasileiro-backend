@@ -245,6 +245,12 @@ export async function updateUserAvatar(req, res) {
 export async function toggleActiveUser(req, res) {
     const { userId } = req.body;
 
+    if (userId === req.userId) {
+        return res.status(200).json({ 
+            message: 'You cannot toggle your own active status' 
+        });
+    }
+
     if (!userId) {
         return res.status(400).json({ 
             message: 'User ID is required' 
@@ -282,7 +288,9 @@ export async function toggleActiveUser(req, res) {
 export async function deactivateUsers(req, res) {
     const { userIds } = req.body;
 
-    if (!userIds || userIds.length === 0) {
+    const userIdsFinal = userIds.filter(id => id !== req.userId);
+
+    if (!userIdsFinal || userIdsFinal.length === 0) {
         return res.status(400).json({ 
             message: 'User IDs are required' 
         });
@@ -296,7 +304,7 @@ export async function deactivateUsers(req, res) {
     `;
 
     try {
-        const result = await pool.query(query, [userIds]);  
+        const result = await pool.query(query, [userIdsFinal]);  
     
         if (result.rowCount === 0) {
             return res.status(404).json({ 
@@ -321,7 +329,9 @@ export async function deactivateUsers(req, res) {
 export async function deleteUsers(req, res) {
     const { userIds } = req.body;
 
-    if (!userIds || userIds.length === 0) {
+    const userIdsFinal = userIds.filter(id => id !== req.userId);
+
+    if (!userIdsFinal || userIdsFinal.length === 0) {
         return res.status(400).json({ 
             message: 'User IDs are required' 
         });
@@ -334,7 +344,7 @@ export async function deleteUsers(req, res) {
     `;
 
     try {
-        const result = await pool.query(query, [userIds]);
+        const result = await pool.query(query, [userIdsFinal]);
 
         if (result.rowCount === 0) {
             return res.status(404).json({ 
