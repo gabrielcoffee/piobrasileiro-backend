@@ -39,6 +39,7 @@ import {
   updateRoom,
   toggleActiveRoom,
   getRoomOccupation,
+  createQuickGuest,
 } from '../controllers/adminControllers.js';
 import multerMiddleware from '../middleware/multerMiddleware.js';
 
@@ -70,8 +71,8 @@ router.delete('/guestmeals/:mealId', authMiddleware, adminMiddleware, deleteGues
 router.post('/guestmeals', authMiddleware, adminMiddleware, createGuestMeal);
 router.put('/guestmeals/:mealId', authMiddleware, adminMiddleware, editGuestMeal);
 
-// CRUD for hospedagem
-router.get('/accommodations', authMiddleware, adminMiddleware, getAccommodations);
+// CRUD for hospedagem / reservas
+router.post('/accommodations/data', authMiddleware, adminMiddleware, getAccommodations);
 router.get('/accommodations/:accommodationId', authMiddleware, adminMiddleware, getAccommodation);
 router.post('/accommodations', authMiddleware, adminMiddleware, createAccommodation);
 router.put('/accommodations/:accommodationId', authMiddleware, adminMiddleware, updateAccommodation);
@@ -87,6 +88,7 @@ router.get('/room-occupation', authMiddleware, adminMiddleware, getRoomOccupatio
 // CRUD for hospede
 router.get('/guests', authMiddleware, adminMiddleware, getGuests);
 router.post('/guests', authMiddleware, adminMiddleware, createGuest);
+router.post('/guests/quick', authMiddleware, adminMiddleware, createQuickGuest);
 router.put('/guests/:guestId', authMiddleware, adminMiddleware, updateGuest);
 router.delete('/guests/:guestId', authMiddleware, adminMiddleware, deleteGuest);
 

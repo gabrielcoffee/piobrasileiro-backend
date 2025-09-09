@@ -73,7 +73,8 @@ CREATE TABLE hospedagem (
     data_chegada DATE NOT NULL,
     data_saida DATE NOT NULL,
     quarto_id UUID NOT NULL REFERENCES quarto(id) ON DELETE CASCADE,
-    status_hospedagem status_hospedagem_enum default 'prevista',
+    almoco boolean default false,
+    janta boolean default false,
     criado_em TIMESTAMP DEFAULT now()
 );
 

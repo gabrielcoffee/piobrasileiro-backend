@@ -638,38 +638,29 @@ export async function deleteMeal(req, res) {
 // ACCOMMODATIONS (hospedagem)
 export async function getAccommodations(req, res) {
 
-    const { startDate, endDate } = req.query;
-
-    const { monday, sunday } = getCurrentWeekDates();
-
+    const { startDate, endDate } = req.body;
 
     try {
 
         const query = `
         SELECT * FROM hospedagem
-        WHERE data_chegada >= $1
-        AND data_saida <= $2
+        WHERE (data_chegada >= $1 and data_chegada <= $2) OR (data_saida >= $1 and data_saida <= $2)
         ORDER BY data_chegada ASC
         `
 
         const result = await pool.query(
             query,
-            [startDate || monday, endDate || sunday]);
+            [startDate, endDate]);
 
         if (result.rows.length === 0){
-            return res.status(404).json({
-                message: "No accommodations found"
+            return res.status(200).json({
+                message: "No accommodations found",
+                data: []
             })
         }
         return res.status(200).json({ 
             message: 'Accommodations fetched successfully', 
-            data: {
-                accommodations: result.rows,
-                dateRange: {
-                    fromDate: monday, 
-                    toDate: sunday 
-                }
-            }
+            data: result.rows
         });
     } catch (error) {
         console.error(error);
@@ -697,7 +688,15 @@ export async function getAccommodation(req, res) {
 }
 
 export async function createAccommodation(req, res) {
-    const { anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, status_hospedagem } = req.body;
+    const { anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, janta } = req.body;
+
+    console.log('anfitriao_id:', anfitriao_id);
+    console.log('hospede_id:', hospede_id);
+    console.log('data_chegada:', data_chegada);
+    console.log('data_saida:', data_saida);
+    console.log('quarto_id:', quarto_id);
+    console.log('almoco:', almoco);
+    console.log('janta:', janta);
 
     if (!anfitriao_id || !hospede_id || !data_chegada || !data_saida || !quarto_id) {
         return res.status(400).json({ 
@@ -707,17 +706,15 @@ export async function createAccommodation(req, res) {
 
     try {
         const result = await pool.query(
-            `INSERT INTO hospedagem (anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, status_hospedagem)
-             VALUES ($1, $2, $3, $4, $5, COALESCE($6, 'prevista'))
+            `INSERT INTO hospedagem (anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, janta)
+             VALUES ($1, $2, $3, $4, $5, COALESCE($6, false), COALESCE($7, false))
              RETURNING *`,
-            [anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, status_hospedagem || null]
+            [anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, janta]
         );
 
         return res.status(201).json({ 
             message: 'Accommodation created successfully', 
-            data: {
-                accommodation: result.rows[0]
-            }
+            data: result.rows[0]
         });
     } catch (error) {
         console.error(error);
@@ -729,7 +726,7 @@ export async function createAccommodation(req, res) {
 
 export async function updateAccommodation(req, res) {
     const { accommodationId } = req.params;
-    const { data_chegada, data_saida, quarto_id, status_hospedagem } = req.body;
+    const { data_chegada, data_saida, quarto_id, almoco, janta } = req.body;
 
     try {
         const result = await pool.query(
@@ -737,10 +734,11 @@ export async function updateAccommodation(req, res) {
              SET data_chegada = COALESCE($1, data_chegada),
                  data_saida = COALESCE($2, data_saida),
                  quarto_id = COALESCE($3, quarto_id),
-                 status_hospedagem = COALESCE($4, status_hospedagem)
+                 almoco = COALESCE($4, almoco),
+                 janta = COALESCE($5, janta)
              WHERE id = $5
              RETURNING *`,
-            [data_chegada || null, data_saida || null, quarto_id || null, status_hospedagem || null, accommodationId]
+            [data_chegada || null, data_saida || null, quarto_id || null, almoco || null, janta || null, accommodationId]
         );
 
         if (result.rows.length === 0) {
@@ -750,9 +748,7 @@ export async function updateAccommodation(req, res) {
 
         return res.status(200).json({ 
             message: 'Accommodation updated successfully', 
-            data: {
-                accommodation: result.rows[0]
-            }
+            data: result.rows[0]
         });
     } catch (error) {
         console.error(error);
@@ -763,18 +759,20 @@ export async function updateAccommodation(req, res) {
 }
 
 export async function deleteAccommodation(req, res) {
+
     const { accommodationId } = req.params;
+
     try {
         const result = await pool.query(`DELETE FROM hospedagem WHERE id = $1 RETURNING *`, [accommodationId]);
+
         if (result.rowCount === 0) {
             return res.status(404).json({ message: 'Accommodation not found' 
-        });
+            });
         }
+
         return res.status(200).json({ 
             message: 'Accommodation deleted successfully', 
-            data: {
-                accommodation: result.rows[0]
-            }
+            data: result.rows[0]
         });
     } catch (error) {
         console.error(error);
@@ -788,7 +786,7 @@ export async function deleteAccommodation(req, res) {
 export async function getRooms(req, res) {
 
     try {
-        const result = await pool.query(`SELECT * FROM quarto ORDER BY numero ASC`);
+        const result = await pool.query(`SELECT * FROM quarto`);
 
         return res.status(200).json({
             message: result.rows.length > 0 ? 'Rooms fetched successfully' : 'No rooms found',
@@ -807,16 +805,38 @@ export async function getRooms(req, res) {
 export async function getGuests(req, res) {
     try {
         const result = await pool.query(`SELECT * FROM hospede ORDER BY criado_em DESC`);
+
         return res.status(200).json({ 
             message: result.rows.length > 0 ? 'Guests fetched successfully' : 'No guests found',
-            data: {
-                guests: result.rows
-            }
+            data: result.rows
         });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ 
             message: 'Failed to fetch guests' 
+        });
+    }
+}
+
+export async function createQuickGuest(req, res) {
+    const { nome } = req.body;
+    try {
+        const result = await pool.query(
+            `INSERT INTO hospede (nome)
+             VALUES ($1)
+             RETURNING *`,
+            [nome]
+        );
+
+        return res.status(201).json({ 
+            message: 'Guest created successfully', 
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ 
+            message: 'Failed to create guest' 
         });
     }
 }
@@ -1403,7 +1423,6 @@ export async function getRoomOccupation(req, res) {
                 ) as ocupacoes
             FROM quarto q
             LEFT JOIN hospedagem h ON q.id = h.quarto_id 
-                AND h.status_hospedagem IN ('prevista', 'ativa')
                 AND h.data_saida > CURRENT_DATE
             GROUP BY q.id, q.numero
             ORDER BY q.numero ASC
