@@ -247,7 +247,7 @@ export async function toggleActiveUser(req, res) {
 
     if (userId === req.userId) {
         return res.status(200).json({ 
-            message: 'You cannot toggle your own active status' 
+            message: 'You cannot toggle your own active status'
         });
     }
 
@@ -787,31 +787,13 @@ export async function deleteAccommodation(req, res) {
 // ROOMS (quarto)
 export async function getRooms(req, res) {
 
-    const { startDate, endDate } = req.query;
-
-    const { monday, sunday } = getCurrentWeekDates();
-
     try {
-
-        // Get all rooms for the week returning a variable if they are available or not on each day
-
-        const query = `
-        SELECT * FROM quarto_ocupado
-        JOIN quarto on quarto.id = quarto_ocupado.quarto_id
-        WHERE data >= $1
-        AND data <= $2
-        ORDER BY quarto.numero ASC
-        `
-        const result = await pool.query(
-            query,
-            [startDate || monday, endDate || sunday]
-        );
+        const result = await pool.query(`SELECT * FROM quarto ORDER BY numero ASC`);
 
         return res.status(200).json({
             message: result.rows.length > 0 ? 'Rooms fetched successfully' : 'No rooms found',
-            data: {
-                rooms: result.rows
-            }
+            data: result.rows
+            
         });
     } catch (error) {
         console.error(error);
@@ -1317,6 +1299,126 @@ export async function deleteBlockedDates(req, res) {
         console.error(error);
         return res.status(500).json({ 
             message: 'Failed to delete blocked dates' 
+        });
+    }
+}
+
+export async function toggleActiveRoom(req, res) {
+
+    const { roomId } = req.params;
+
+    try {
+        const result = await pool.query(
+            `
+            UPDATE quarto
+            SET active = NOT active
+            WHERE id = $1
+            RETURNING *`,
+            [roomId]
+        );
+
+        return res.status(200).json({
+            message: 'Room updated successfully',
+            data: result.rows[0]
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ 
+            message: 'Failed to update room' 
+        });
+    }
+}
+
+export async function updateRoom(req, res) {
+    const { roomId } = req.params;
+    const { numero, capacidade, active } = req.body;
+
+    try {
+        const result = await pool.query(
+            `
+            UPDATE quarto
+            SET numero = $1, capacidade = $2, active = $3
+            WHERE id = $4
+            RETURNING *`,
+            [numero, capacidade, active, roomId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                message: 'Room not found'
+            });
+        }
+
+        return res.status(200).json({
+            message: 'Room updated successfully',
+            data: result.rows[0]
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ 
+            message: 'Failed to update room' 
+        });
+    }
+}
+
+export async function createRoom(req, res) {
+    const { numero, capacidade, active } = req.body;
+
+    try {
+        const result = await pool.query(
+            `
+            INSERT INTO quarto (numero, capacidade, active)
+            VALUES ($1, $2, $3)
+            RETURNING *`,
+            [numero, capacidade, active]
+        );
+
+        return res.status(201).json({
+            message: 'Room created successfully',
+            data: result.rows[0]
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ 
+            message: 'Failed to create room' 
+        });
+    }
+}
+
+export async function getRoomOccupation(req, res) {
+
+    try {
+        const result = await pool.query(`
+            SELECT 
+                q.id as quarto_id,
+                q.numero,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'data_chegada', h.data_chegada,
+                            'data_saida', h.data_saida
+                        )
+                    ) FILTER (WHERE h.id IS NOT NULL),
+                    '[]'::json
+                ) as ocupacoes
+            FROM quarto q
+            LEFT JOIN hospedagem h ON q.id = h.quarto_id 
+                AND h.status_hospedagem IN ('prevista', 'ativa')
+                AND h.data_saida > CURRENT_DATE
+            GROUP BY q.id, q.numero
+            ORDER BY q.numero ASC
+        `);
+
+        console.log('result:', result.rows);
+
+        return res.status(200).json({
+            message: 'Room occupation data found',
+            data: result.rows
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ 
+            message: 'Failed to fetch room occupation data' 
         });
     }
 }

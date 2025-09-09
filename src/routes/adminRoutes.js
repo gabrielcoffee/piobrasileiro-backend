@@ -35,6 +35,10 @@ import {
   getBlockedDates,
   addBlockedDates,
   deleteBlockedDates,
+  createRoom,
+  updateRoom,
+  toggleActiveRoom,
+  getRoomOccupation,
 } from '../controllers/adminControllers.js';
 import multerMiddleware from '../middleware/multerMiddleware.js';
 
@@ -75,6 +79,10 @@ router.delete('/accommodations/:accommodationId', authMiddleware, adminMiddlewar
 
 // CRUD for quarto
 router.get('/rooms', authMiddleware, adminMiddleware, getRooms);
+router.post('/rooms', authMiddleware, adminMiddleware, createRoom);
+router.put('/rooms/:roomId', authMiddleware, adminMiddleware, updateRoom);
+router.put('/rooms/toggle-active/:roomId', authMiddleware, adminMiddleware, toggleActiveRoom);
+router.get('/room-occupation', authMiddleware, adminMiddleware, getRoomOccupation);
 
 // CRUD for hospede
 router.get('/guests', authMiddleware, adminMiddleware, getGuests);
