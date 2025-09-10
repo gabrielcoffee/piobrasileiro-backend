@@ -62,7 +62,7 @@ router.post('/users/deactivate', authMiddleware, adminMiddleware, deactivateUser
 router.delete('/users/delete', authMiddleware, adminMiddleware, deleteUsers);
 
 // CRUD for refeicao
-router.get('/meals', authMiddleware, adminMiddleware, getMeals);
+router.post('/meals/data', authMiddleware, adminMiddleware, getMeals);
 router.get('/meals/:mealId', authMiddleware, adminMiddleware, getMeal);
 router.post('/meals/:userId', authMiddleware, adminMiddleware, createUserMeal);
 router.put('/meals/:mealId', authMiddleware, adminMiddleware, updateMeal);

@@ -121,49 +121,7 @@ CREATE TABLE password_reset (
 )
 
 -- Function to manage occupied room dates
-CREATE OR REPLACE FUNCTION manage_quarto_ocupado()
-RETURNS TRIGGER AS $$
-BEGIN
-    -- Handle INSERT (new reservation)
-    IF TG_OP = 'INSERT' THEN
-        -- Only insert if status is 'prevista' or 'ativa'
-        IF NEW.status_hospedagem IN ('prevista', 'ativa') THEN
-            INSERT INTO quarto_ocupado (quarto_id, data, hospedagem_id)
-            SELECT NEW.quarto_id, 
-                   date_series.data,
-                   NEW.id
-            FROM generate_series(NEW.data_chegada, NEW.data_saida - interval '1 day', interval '1 day') AS date_series(data)
-            ON CONFLICT (quarto_id, data) DO NOTHING;
-        END IF;
-        RETURN NEW;
-    END IF;
-    
-    -- Handle UPDATE (reservation changed)
-    IF TG_OP = 'UPDATE' THEN
-        -- First, remove old occupied dates for this reservation
-        DELETE FROM quarto_ocupado WHERE hospedagem_id = OLD.id;
-        
-        -- Then add new occupied dates if status is still active
-        IF NEW.status_hospedagem IN ('prevista', 'ativa') THEN
-            INSERT INTO quarto_ocupado (quarto_id, data, hospedagem_id)
-            SELECT NEW.quarto_id, 
-                   date_series.data,
-                   NEW.id
-            FROM generate_series(NEW.data_chegada, NEW.data_saida - interval '1 day', interval '1 day') AS date_series(data)
-            ON CONFLICT (quarto_id, data) DO NOTHING;
-        END IF;
-        RETURN NEW;
-    END IF;
-    
-    -- Handle DELETE (reservation cancelled)
-    IF TG_OP = 'DELETE' THEN
-        DELETE FROM quarto_ocupado WHERE hospedagem_id = OLD.id;
-        RETURN OLD;
-    END IF;
-    
-    RETURN NULL;
-END;
-$$ LANGUAGE plpgsql;
+drop function manage_quarto_ocupado;
 
 -- Triggers
 CREATE TRIGGER hospedagem_ocupado_trigger

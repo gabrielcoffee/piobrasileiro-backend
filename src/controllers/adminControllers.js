@@ -373,6 +373,11 @@ export async function deleteUsers(req, res) {
 // MEALS (refeicao)
 export async function getMeals(req, res) {
 
+    const { startDate, endDate } = req.body;
+
+    console.log('startDate:', startDate);
+    console.log('endDate:', endDate);
+
     try {
         const query = `
         SELECT 
@@ -426,25 +431,16 @@ export async function getMeals(req, res) {
         LEFT JOIN convidado c ON r.convidado_id = c.id AND r.tipo_pessoa = 'convidado'
         -- Join to get anfitriao information for convidados
         LEFT JOIN perfil p_anfitriao ON c.anfitriao_id = p_anfitriao.user_id AND r.tipo_pessoa = 'convidado'
+        WHERE r.data >= $1 AND r.data <= $2
         ORDER BY r.data DESC;
         `;
 
-        const result = await pool.query(query);
-
-        // Conseguir numero total de refeicoes, almoco_colegio, almoco_levar, janta_colegio, observacoes
-
-        const quantityData = {
-            totalMeals: result.rows.length,
-            totalAlmocoColegio: result.rows.filter(meal => meal.almoco_colegio).length,
-            totalAlmocoLevar: result.rows.filter(meal => meal.almoco_levar).length,
-            totalJantaColegio: result.rows.filter(meal => meal.janta_colegio).length,
-        };
+        const result = await pool.query(query, [startDate, endDate]);
 
         return res.status(200).json({
             message: result.rows.length > 0 ? "Successfully fetched meals" : "No meals found",
             data: {
                 meals: result.rows,
-                quantityData: quantityData
             }
         });
     } catch (error) {
@@ -688,15 +684,7 @@ export async function getAccommodation(req, res) {
 }
 
 export async function createAccommodation(req, res) {
-    const { anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, janta } = req.body;
-
-    console.log('anfitriao_id:', anfitriao_id);
-    console.log('hospede_id:', hospede_id);
-    console.log('data_chegada:', data_chegada);
-    console.log('data_saida:', data_saida);
-    console.log('quarto_id:', quarto_id);
-    console.log('almoco:', almoco);
-    console.log('janta:', janta);
+    const { anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, jantar, observacoes } = req.body;
 
     if (!anfitriao_id || !hospede_id || !data_chegada || !data_saida || !quarto_id) {
         return res.status(400).json({ 
@@ -704,13 +692,38 @@ export async function createAccommodation(req, res) {
         });
     }
 
+    const client = await pool.connect();
+
     try {
-        const result = await pool.query(
+        await client.query('BEGIN');
+
+        const result = await client.query(
             `INSERT INTO hospedagem (anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, janta)
              VALUES ($1, $2, $3, $4, $5, COALESCE($6, false), COALESCE($7, false))
              RETURNING *`,
-            [anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, janta]
+            [anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, jantar]
         );
+
+        if (result.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ message: 'Failed to create accommodation' 
+            });
+        }
+
+        const observacoesResult = await client.query(
+            `UPDATE hospede 
+            SET observacoes = $1
+            WHERE id = $2`,
+            [observacoes, hospede_id]
+        )
+
+        if (observacoesResult.rowCount === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ message: 'Failed to update guest' 
+            });
+        }
+
+        await client.query('COMMIT');
 
         return res.status(201).json({ 
             message: 'Accommodation created successfully', 
@@ -721,6 +734,8 @@ export async function createAccommodation(req, res) {
         return res.status(500).json({ 
             message: 'Failed to create accommodation' 
         });
+    } finally {
+        await client.release();
     }
 }
 
@@ -728,8 +743,14 @@ export async function updateAccommodation(req, res) {
     const { accommodationId } = req.params;
     const { data_chegada, data_saida, quarto_id, almoco, janta } = req.body;
 
+    const client = await pool.connect();
+
     try {
-        const result = await pool.query(
+        
+
+        await client.query('BEGIN');
+
+        const result = await client.query(
             `UPDATE hospedagem
              SET data_chegada = COALESCE($1, data_chegada),
                  data_saida = COALESCE($2, data_saida),
@@ -746,15 +767,20 @@ export async function updateAccommodation(req, res) {
         });
         }
 
+        await client.query('COMMIT');
+
         return res.status(200).json({ 
             message: 'Accommodation updated successfully', 
             data: result.rows[0]
         });
     } catch (error) {
+        await client.query('ROLLBACK');
         console.error(error);
         return res.status(500).json({ 
             message: 'Failed to update accommodation' 
         });
+    } finally {
+        await client.release();
     }
 }
 
