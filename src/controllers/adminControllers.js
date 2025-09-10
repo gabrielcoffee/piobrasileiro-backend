@@ -817,22 +817,29 @@ export async function updateAccommodation(req, res) {
             return res.status(404).json({ message: 'Guest not found'});
         }
 
-        const dates = getListOfDatesFromCheckInToCheckOut(data_chegada, data_saida);
-
         // First, delete existing meals for this hospede
         await client.query(
             `DELETE FROM refeicao WHERE hospede_id = $1`,
             [hospedeId]
         );
 
-        // Then, create new meals for the new dates (if dates are provided)
-        if (dates && dates.length > 0) {
-            const mealResult = await client.query(
-                `INSERT INTO refeicao (tipo_pessoa, hospede_id, data, almoco_colegio, janta_colegio)
-                SELECT 'hospede', $1, unnest($2::date[]), $3, $4
-                RETURNING *`,
-                [hospedagemResult.rows[0].hospede_id, dates, Boolean(almoco), Boolean(janta)]
-            );
+        if (almoco || janta) {
+            const dates = getListOfDatesFromCheckInToCheckOut(data_chegada, data_saida);
+            // Then, create new meals for the new dates (if dates are provided)
+            if (dates && dates.length > 0) {
+                const mealResult = await client.query(
+                    `INSERT INTO refeicao (tipo_pessoa, hospede_id, data, almoco_colegio, janta_colegio)
+                    SELECT 'hospede', $1, unnest($2::date[]), $3, $4
+                    RETURNING *`,
+                    [hospedeId, dates, Boolean(almoco), Boolean(janta)]
+                );
+
+                if (mealResult.rowCount === 0) {
+                    await client.query('ROLLBACK');
+                    return res.status(404).json({ message: 'Failed to create meals' 
+                    });
+                }
+            }
         }
 
         await client.query('COMMIT');
