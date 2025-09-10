@@ -1,6 +1,6 @@
 import pool from '../db.js';
 import bcrypt from 'bcryptjs';
-import { getCurrentWeekDates, isPasswordValid } from '../utils.js';
+import { getCurrentWeekDates, getListOfDatesFromCheckInToCheckOut, isPasswordValid } from '../utils.js';
 
 export async function createUserAndPerfil(req, res) {
     const {
@@ -639,10 +639,26 @@ export async function getAccommodations(req, res) {
     try {
 
         const query = `
-        SELECT * FROM hospedagem
-        WHERE (data_chegada >= $1 and data_chegada <= $2) OR (data_saida >= $1 and data_saida <= $2)
-        ORDER BY data_chegada ASC
-        `
+            SELECT 
+                h.*,
+                ho.nome,
+                p.nome_completo as anfitriao,
+                h.data_chegada,
+                h.data_saida,
+                q.numero as quarto,
+                CASE
+                    WHEN CURRENT_DATE BETWEEN h.data_chegada AND h.data_saida THEN 'Ativa'
+                    WHEN CURRENT_DATE < h.data_chegada THEN 'Prevista'
+                    WHEN CURRENT_DATE > h.data_saida THEN 'Encerrada'
+                END as status,
+                ho.observacoes
+            FROM hospedagem h
+            JOIN hospede ho ON h.hospede_id = ho.id
+            JOIN perfil p ON h.anfitriao_id = p.user_id
+            JOIN quarto q ON h.quarto_id = q.id
+            WHERE (h.data_chegada >= $1 AND h.data_chegada <= $2) OR (h.data_saida >= $1 AND h.data_saida <= $2)
+            ORDER BY h.data_chegada ASC
+            `;
 
         const result = await pool.query(
             query,
@@ -684,7 +700,7 @@ export async function getAccommodation(req, res) {
 }
 
 export async function createAccommodation(req, res) {
-    const { anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, jantar, observacoes } = req.body;
+    const { anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, janta, observacoes } = req.body;
 
     if (!anfitriao_id || !hospede_id || !data_chegada || !data_saida || !quarto_id) {
         return res.status(400).json({ 
@@ -701,7 +717,7 @@ export async function createAccommodation(req, res) {
             `INSERT INTO hospedagem (anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, janta)
              VALUES ($1, $2, $3, $4, $5, COALESCE($6, false), COALESCE($7, false))
              RETURNING *`,
-            [anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, jantar]
+            [anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, janta]
         );
 
         if (result.rows.length === 0) {
@@ -723,6 +739,27 @@ export async function createAccommodation(req, res) {
             });
         }
 
+        const dates = getListOfDatesFromCheckInToCheckOut(data_chegada, data_saida);
+
+        const mealResult = await client.query(
+            `INSERT INTO refeicao (tipo_pessoa, hospede_id, data, almoco_colegio, janta_colegio)
+             SELECT 
+                 'hospede' as tipo_pessoa,
+                 $1 as hospede_id,
+                 date_value as data,
+                 $3 as almoco_colegio,
+                 $4 as janta_colegio
+             FROM unnest($2::date[]) as date_value
+             RETURNING *`,
+            [hospede_id, dates, almoco, janta]
+        );
+
+        if (mealResult.rowCount === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ message: 'Failed to create meals' 
+            });
+        }
+
         await client.query('COMMIT');
 
         return res.status(201).json({ 
@@ -741,30 +778,61 @@ export async function createAccommodation(req, res) {
 
 export async function updateAccommodation(req, res) {
     const { accommodationId } = req.params;
-    const { data_chegada, data_saida, quarto_id, almoco, janta } = req.body;
+    const { data_chegada, data_saida, quarto_id, almoco, janta, observacoes } = req.body;
 
     const client = await pool.connect();
 
     try {
-        
 
         await client.query('BEGIN');
 
         const result = await client.query(
             `UPDATE hospedagem
-             SET data_chegada = COALESCE($1, data_chegada),
-                 data_saida = COALESCE($2, data_saida),
-                 quarto_id = COALESCE($3, quarto_id),
-                 almoco = COALESCE($4, almoco),
-                 janta = COALESCE($5, janta)
-             WHERE id = $5
+             SET data_chegada = $1,
+                 data_saida = $2,
+                 quarto_id = $3,
+                 almoco = $4,
+                 janta = $5
+             WHERE id = $6
              RETURNING *`,
-            [data_chegada || null, data_saida || null, quarto_id || null, almoco || null, janta || null, accommodationId]
+            [data_chegada, data_saida, quarto_id, almoco, janta, accommodationId]
         );
 
+        const hospedeId = result.rows[0].hospede_id;
+
         if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'Accommodation not found' 
-        });
+            return res.status(404).json({ message: 'Accommodation not found'});
+        }
+
+        const guestResult = await client.query(
+            `UPDATE hospede
+             SET observacoes = $1
+             WHERE id = $2
+             RETURNING *`,
+            [observacoes, hospedeId]
+        );
+
+        if (guestResult.rowCount === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ message: 'Guest not found'});
+        }
+
+        const dates = getListOfDatesFromCheckInToCheckOut(data_chegada, data_saida);
+
+        // First, delete existing meals for this hospede
+        await client.query(
+            `DELETE FROM refeicao WHERE hospede_id = $1`,
+            [hospedeId]
+        );
+
+        // Then, create new meals for the new dates (if dates are provided)
+        if (dates && dates.length > 0) {
+            const mealResult = await client.query(
+                `INSERT INTO refeicao (tipo_pessoa, hospede_id, data, almoco_colegio, janta_colegio)
+                SELECT 'hospede', $1, unnest($2::date[]), $3, $4
+                RETURNING *`,
+                [hospedagemResult.rows[0].hospede_id, dates, Boolean(almoco), Boolean(janta)]
+            );
         }
 
         await client.query('COMMIT');
@@ -812,6 +880,24 @@ export async function deleteAccommodation(req, res) {
 export async function getRooms(req, res) {
 
     try {
+        const result = await pool.query(`SELECT * FROM quarto WHERE active = TRUE`);
+
+        return res.status(200).json({
+            message: result.rows.length > 0 ? 'Rooms fetched successfully' : 'No rooms found',
+            data: result.rows
+            
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ 
+            message: 'Failed to fetch rooms' 
+        });
+    }
+}
+
+export async function getAllRooms(req, res) {
+
+    try {
         const result = await pool.query(`SELECT * FROM quarto`);
 
         return res.status(200).json({
@@ -854,7 +940,7 @@ export async function createQuickGuest(req, res) {
             [nome]
         );
 
-        return res.status(201).json({ 
+        return res.status(201).json({
             message: 'Guest created successfully', 
             data: result.rows[0]
         });
@@ -1453,8 +1539,6 @@ export async function getRoomOccupation(req, res) {
             GROUP BY q.id, q.numero
             ORDER BY q.numero ASC
         `);
-
-        console.log('result:', result.rows);
 
         return res.status(200).json({
             message: 'Room occupation data found',

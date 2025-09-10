@@ -84,3 +84,13 @@ export async function getUserLoginData(userId) {
         meals: mealsResult.rows
     };
 }
+
+export const getListOfDatesFromCheckInToCheckOut = (data_chegada, data_saida) => {
+    const dates = [];
+    const currentDate = new Date(data_chegada);
+    while (currentDate <= new Date(data_saida)) {
+        dates.push(currentDate.toISOString().split('T')[0]);
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+    return dates;
+}

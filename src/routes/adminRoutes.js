@@ -40,6 +40,7 @@ import {
   toggleActiveRoom,
   getRoomOccupation,
   createQuickGuest,
+  getAllRooms,
 } from '../controllers/adminControllers.js';
 import multerMiddleware from '../middleware/multerMiddleware.js';
 
@@ -80,6 +81,7 @@ router.delete('/accommodations/:accommodationId', authMiddleware, adminMiddlewar
 
 // CRUD for quarto
 router.get('/rooms', authMiddleware, adminMiddleware, getRooms);
+router.get('/rooms/all', authMiddleware, adminMiddleware, getAllRooms);
 router.post('/rooms', authMiddleware, adminMiddleware, createRoom);
 router.put('/rooms/:roomId', authMiddleware, adminMiddleware, updateRoom);
 router.put('/rooms/toggle-active/:roomId', authMiddleware, adminMiddleware, toggleActiveRoom);
