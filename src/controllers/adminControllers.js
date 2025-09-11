@@ -375,9 +375,6 @@ export async function getMeals(req, res) {
 
     const { startDate, endDate } = req.body;
 
-    console.log('startDate:', startDate);
-    console.log('endDate:', endDate);
-
     try {
         const query = `
         SELECT 
@@ -990,7 +987,7 @@ export async function createQuickGuest(req, res) {
 }
 
 export async function createGuest(req, res) {
-    const { nome, genero, tipo_documento, num_documento, funcao, origem } = req.body;
+    const { nome, genero, tipo_documento, num_documento, funcao, origem, observacoes } = req.body;
 
     if (!nome || !genero || !tipo_documento || !num_documento) {
         return res.status(400).json({ 
@@ -1000,10 +997,10 @@ export async function createGuest(req, res) {
 
     try {
         const result = await pool.query(
-            `INSERT INTO hospede (nome, genero, tipo_documento, num_documento, funcao, origem)
-             VALUES ($1, $2, $3, $4, $5, $6)
+            `INSERT INTO hospede (nome, genero, tipo_documento, num_documento, funcao, origem, observacoes)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
              RETURNING *`,
-            [nome, genero, tipo_documento, num_documento, funcao || null, origem || null]
+            [nome, genero, tipo_documento, num_documento, funcao || '', origem || '', observacoes || '']
         );
 
         return res.status(201).json({ 
@@ -1022,7 +1019,7 @@ export async function createGuest(req, res) {
 
 export async function updateGuest(req, res) {
     const { guestId } = req.params;
-    const { nome, genero, tipo_documento, num_documento, funcao, origem } = req.body;
+    const { nome, genero, tipo_documento, num_documento, funcao, origem, observacoes } = req.body;
 
     try {
         const result = await pool.query(
@@ -1032,10 +1029,11 @@ export async function updateGuest(req, res) {
                  tipo_documento = COALESCE($3, tipo_documento),
                  num_documento = COALESCE($4, num_documento),
                  funcao = COALESCE($5, funcao),
-                 origem = COALESCE($6, origem)
-             WHERE id = $7
+                 origem = COALESCE($6, origem),
+                 observacoes = COALESCE($7, observacoes)
+             WHERE id = $8
              RETURNING *`,
-            [nome || null, genero || null, tipo_documento || null, num_documento || null, funcao || null, origem || null, guestId]
+            [nome || null, genero || null, tipo_documento || null, num_documento || null, funcao || '', origem || '', observacoes || '', guestId]
         );
 
         if (result.rows.length === 0) {
@@ -1061,15 +1059,12 @@ export async function deleteGuest(req, res) {
     const { guestId } = req.params;
     try {
         const result = await pool.query(`DELETE FROM hospede WHERE id = $1 RETURNING *`, [guestId]);
-        if (result.rowCount === 0) {
-            return res.status(404).json({ message: 'Guest not found' 
-        });
+            if (result.rowCount === 0) {
+                return res.status(404).json({ message: 'Guest not found' 
+            });
         }
         return res.status(200).json({ 
             message: 'Guest deleted successfully', 
-            data: {
-                guest: result.rows[0]
-            }
         });
     } catch (error) {
         console.error(error);
@@ -1714,8 +1709,10 @@ export async function getDashboard(req, res) {
 }
 
 export async function getDashboardReport(req, res) {
+
+    const { monday, sunday } = getCurrentWeekDates();
+
     try {
-        const { monday, sunday } = getCurrentWeekDates();
 
         // Query 1: Get meal counts by day
         const mealsResult = await pool.query(`
@@ -1839,6 +1836,139 @@ export async function getDashboardReport(req, res) {
         console.error(error);
         return res.status(500).json({
             message: 'Failed to retrieve dashboard report'
+        });
+    }
+}
+
+export async function getReport(req, res) {
+
+    const startDate = new Date(req.body.startDate);
+    const endDate = new Date(req.body.endDate);
+    
+    try {
+
+        // Query 1: Get meal counts by day
+        const mealsResult = await pool.query(`
+            SELECT 
+                data,
+                COUNT(CASE WHEN almoco_colegio = true THEN 1 END) as almoco_colegio_count,
+                COUNT(CASE WHEN almoco_levar = true THEN 1 END) as almoco_levar_count,
+                COUNT(CASE WHEN (almoco_colegio = true OR almoco_levar = true) THEN 1 END) as total_almoco,
+                COUNT(CASE WHEN janta_colegio = true THEN 1 END) as total_janta
+            FROM refeicao 
+            WHERE data >= $1 AND data <= $2
+            GROUP BY data
+        `, [startDate, endDate]);
+
+        // Query 2: Get all notes from perfil, convidado, and hospede
+        const notesResult = await pool.query(`
+            WITH meal_people AS (
+                SELECT DISTINCT usuario_id, convidado_id, hospede_id
+                FROM refeicao 
+                WHERE data >= $1 AND data <= $2
+            )
+            SELECT p.nome_completo as name, p.observacoes as note 
+            FROM meal_people mp
+            JOIN perfil p ON mp.usuario_id = p.user_id
+            WHERE mp.usuario_id IS NOT NULL 
+              AND p.observacoes IS NOT NULL 
+              AND p.observacoes != ''
+            
+            UNION ALL
+            
+            SELECT c.nome as name, c.observacoes as note 
+            FROM meal_people mp
+            JOIN convidado c ON mp.convidado_id = c.id
+            WHERE mp.convidado_id IS NOT NULL 
+              AND c.observacoes IS NOT NULL 
+              AND c.observacoes != ''
+            
+            UNION ALL
+            
+            SELECT h.nome as name, h.observacoes as note 
+            FROM meal_people mp
+            JOIN hospede h ON mp.hospede_id = h.id
+            WHERE mp.hospede_id IS NOT NULL 
+              AND h.observacoes IS NOT NULL 
+              AND h.observacoes != ''
+        `, [startDate, endDate]);
+
+        // Format period string (DD/MM format)
+        const formatDate = (date) => {
+            const d = new Date(date);
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            return `${day}/${month}`;
+        };
+
+        // Portuguese day names starting with Segunda-feira
+        const dayNames = [
+            'Segunda-feira', 'Terça-feira', 'Quarta-feira', 
+            'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo'
+        ];
+
+        // Generate days using JavaScript
+        const daysInfo = [];
+        for (let i = 0; i < 7; i++) {
+            const currentDay = new Date(startDate);
+            currentDay.setDate(startDate.getDate() + i);
+            const dayStr = currentDay.toISOString().split('T')[0];
+            
+            // Find meal data for this day
+            const mealData = mealsResult.rows.find(m => 
+                m.data.toISOString().split('T')[0] === dayStr
+            ) || {
+                almoco_colegio_count: 0,
+                almoco_levar_count: 0,
+                total_almoco: 0,
+                total_janta: 0
+            };
+
+            const totalRefeicoes = parseInt(mealData.total_almoco) + parseInt(mealData.total_janta);
+
+            daysInfo.push({
+                date: formatDate(currentDay),
+                day: dayNames[i],
+                mealsInfo: {
+                    totalAlmoco: parseInt(mealData.total_almoco),
+                    totalAlmocoLevar: parseInt(mealData.almoco_levar_count),
+                    totalAlmocoColegio: parseInt(mealData.almoco_colegio_count),
+                    totalJanta: parseInt(mealData.total_janta),
+                    totalRefeicoes: totalRefeicoes
+                }
+            });
+        }
+
+        // Calculate week totals
+        const totalAlmoco = daysInfo.reduce((sum, day) => sum + day.mealsInfo.totalAlmoco, 0);
+        const totalJantares = daysInfo.reduce((sum, day) => sum + day.mealsInfo.totalJanta, 0);
+
+        // Format week info
+        const weekInfo = {
+            period: `${formatDate(startDate)} a ${formatDate(endDate)}`,
+            totalAlmoco: totalAlmoco,
+            totalJantares: totalJantares,
+            daysInfo: daysInfo
+        };
+
+        // Format notes info
+        const notesInfo = notesResult.rows.map(row => ({
+            name: row.name,
+            note: row.note
+        }));
+
+        return res.status(200).json({
+            message: 'Report retrieved successfully',
+            data: {
+                weekInfo: weekInfo,
+                notesInfo: notesInfo
+            }
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: 'Failed to retrieve report'
         });
     }
 }

@@ -14,7 +14,7 @@ router.put('/perfil/senha', authMiddleware, updateUserPassword);
 router.put('/perfil/avatar', authMiddleware, multerMiddleware, updatePerfilAvatar);
 
 // Getting meal data
-router.get( '/weekmeals', authMiddleware, getUserMeals);
+router.get('/weekmeals', authMiddleware, getUserMeals);
 router.post('/weekmeals',  authMiddleware, upsertMeals);
 
 // Geeting guest meals data
