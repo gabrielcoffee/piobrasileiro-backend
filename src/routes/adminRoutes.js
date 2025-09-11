@@ -41,10 +41,15 @@ import {
   getRoomOccupation,
   createQuickGuest,
   getAllRooms,
+  getDashboard,
+  getDashboardReport,
 } from '../controllers/adminControllers.js';
 import multerMiddleware from '../middleware/multerMiddleware.js';
 
 const router = express.Router();
+
+router.get('/dashboard', authMiddleware, adminMiddleware, getDashboard);
+router.get('/dashboard/report', authMiddleware, adminMiddleware, getDashboardReport);
 
 // Current logged admin user profile
 router.get('/profile', authMiddleware, adminMiddleware, getProfile);

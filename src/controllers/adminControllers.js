@@ -1558,3 +1558,257 @@ export async function getRoomOccupation(req, res) {
         });
     }
 }
+
+
+export async function getDashboard(req, res) {
+    try {
+        const { monday, sunday } = getCurrentWeekDates();
+
+        // Query 1: Get all days of the week
+        const daysResult = await pool.query(`
+            SELECT generate_series($1::date, $2::date, '1 day'::interval)::date AS day
+        `, [monday, sunday]);
+
+        // Query 2: Get meal counts by day
+        const mealsResult = await pool.query(`
+            SELECT 
+                data,
+                COUNT(CASE WHEN almoco_colegio = true THEN 1 END) as almoco_colegio,
+                COUNT(CASE WHEN almoco_levar = true THEN 1 END) as almoco_levar,
+                COUNT(CASE WHEN janta_colegio = true THEN 1 END) as janta_colegio,
+                COUNT(CASE WHEN convidado_id IS NOT NULL THEN 1 END) as convidados
+            FROM refeicao 
+            WHERE data >= $1 AND data <= $2
+            GROUP BY data
+        `, [monday, sunday]);
+
+        // Query 3: Get unique hospede count for this week
+        const hospedesResult = await pool.query(`
+            SELECT COUNT(DISTINCT hospede_id) as hospedes
+            FROM hospedagem 
+            WHERE (data_chegada <= $2 AND data_saida > $1)
+        `, [monday, sunday]);
+
+        // Query 4: Get available rooms count
+        const availableRoomsResult = await pool.query(`
+            WITH occupied_rooms AS (
+                SELECT DISTINCT quarto_id
+                FROM hospedagem 
+                WHERE (data_chegada <= $2 AND data_saida > $1)
+            ),
+            total_rooms AS (
+                SELECT COUNT(*) as total FROM quarto
+            )
+            SELECT (tr.total - COALESCE(COUNT(or_table.quarto_id), 0)) as available_rooms
+            FROM total_rooms tr
+            LEFT JOIN occupied_rooms or_table ON true
+            GROUP BY tr.total
+        `, [monday, sunday]);
+
+        // Query 5: Get daily hospede counts
+        const dailyHospedesResult = await pool.query(`
+            WITH week_days AS (
+                SELECT generate_series($1::date, $2::date, '1 day'::interval)::date AS day
+            )
+            SELECT 
+                wd.day,
+                COUNT(DISTINCT h.hospede_id) as hospedes_count
+            FROM week_days wd
+            LEFT JOIN hospedagem h ON wd.day BETWEEN h.data_chegada AND h.data_saida
+            GROUP BY wd.day
+            ORDER BY wd.day
+        `, [monday, sunday]);
+
+        // Query 6: Get total residents
+        const residentsResult = await pool.query('SELECT COUNT(*) as total FROM perfil');
+
+        // Update the dailyStats mapping:
+        const dailyStats = daysResult.rows.map(dayRow => {
+            const day = dayRow.day.toISOString().split('T')[0];
+            
+            // Find meal stats for this day
+            const mealData = mealsResult.rows.find(m => m.data.toISOString().split('T')[0] === day) || {
+                almoco_colegio: 0,
+                almoco_levar: 0,
+                janta_colegio: 0,
+                convidados: 0
+            };
+
+            // Find hospede count for this day
+            const hospedeData = dailyHospedesResult.rows.find(h => 
+                h.day.toISOString().split('T')[0] === day
+            ) || { hospedes_count: 0 };
+
+            const totalMeals = parseInt(mealData.almoco_colegio) + parseInt(mealData.almoco_levar) + parseInt(mealData.janta_colegio);
+
+            return {
+                day: day,
+                dayName: new Date(day).toLocaleDateString('en-US', { weekday: 'long' }),
+                almocoColegioCount: parseInt(mealData.almoco_colegio),
+                almocoLevarCount: parseInt(mealData.almoco_levar),
+                jantaColegioCount: parseInt(mealData.janta_colegio),
+                totalMeals: totalMeals,
+                convidadosCount: parseInt(mealData.convidados),
+                hospedesCount: parseInt(hospedeData.hospedes_count)
+            };
+        });
+
+        // Update weekTotals
+        const weekTotals = {
+            almocoColegioCount: dailyStats.reduce((sum, day) => sum + day.almocoColegioCount, 0),
+            almocoLevarCount: dailyStats.reduce((sum, day) => sum + day.almocoLevarCount, 0),
+            jantaColegioCount: dailyStats.reduce((sum, day) => sum + day.jantaColegioCount, 0),
+            totalMeals: dailyStats.reduce((sum, day) => sum + day.totalMeals, 0),
+            convidadosCount: dailyStats.reduce((sum, day) => sum + day.convidadosCount, 0),
+            hospedesCountWeek: dailyStats.reduce((sum, day) => sum + day.hospedesCount, 0)
+        };
+
+        // Update the return data
+        return res.status(200).json({
+            message: 'Dashboard data retrieved successfully',
+            data: {
+                dailyStats: dailyStats,
+                weekTotals: weekTotals,
+                totalMoradores: parseInt(residentsResult.rows[0].total),
+                hospedesCount: parseInt(hospedesResult.rows[0].hospedes),
+                availableRooms: parseInt(availableRoomsResult.rows[0].available_rooms)
+            }
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: 'Failed to retrieve dashboard data'
+        });
+    }
+}
+
+export async function getDashboardReport(req, res) {
+    try {
+        const { monday, sunday } = getCurrentWeekDates();
+
+        // Query 1: Get meal counts by day
+        const mealsResult = await pool.query(`
+            SELECT 
+                data,
+                COUNT(CASE WHEN almoco_colegio = true THEN 1 END) as almoco_colegio_count,
+                COUNT(CASE WHEN almoco_levar = true THEN 1 END) as almoco_levar_count,
+                COUNT(CASE WHEN (almoco_colegio = true OR almoco_levar = true) THEN 1 END) as total_almoco,
+                COUNT(CASE WHEN janta_colegio = true THEN 1 END) as total_janta
+            FROM refeicao 
+            WHERE data >= $1 AND data <= $2
+            GROUP BY data
+        `, [monday, sunday]);
+
+        // Query 2: Get all notes from perfil, convidado, and hospede
+        const notesResult = await pool.query(`
+            WITH meal_people AS (
+                SELECT DISTINCT usuario_id, convidado_id, hospede_id
+                FROM refeicao 
+                WHERE data >= $1 AND data <= $2
+            )
+            SELECT p.nome_completo as name, p.observacoes as note 
+            FROM meal_people mp
+            JOIN perfil p ON mp.usuario_id = p.user_id
+            WHERE mp.usuario_id IS NOT NULL 
+              AND p.observacoes IS NOT NULL 
+              AND p.observacoes != ''
+            
+            UNION ALL
+            
+            SELECT c.nome as name, c.observacoes as note 
+            FROM meal_people mp
+            JOIN convidado c ON mp.convidado_id = c.id
+            WHERE mp.convidado_id IS NOT NULL 
+              AND c.observacoes IS NOT NULL 
+              AND c.observacoes != ''
+            
+            UNION ALL
+            
+            SELECT h.nome as name, h.observacoes as note 
+            FROM meal_people mp
+            JOIN hospede h ON mp.hospede_id = h.id
+            WHERE mp.hospede_id IS NOT NULL 
+              AND h.observacoes IS NOT NULL 
+              AND h.observacoes != ''
+        `, [monday, sunday]);
+
+        // Format period string (DD/MM format)
+        const formatDate = (date) => {
+            const d = new Date(date);
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            return `${day}/${month}`;
+        };
+
+        // Portuguese day names starting with Segunda-feira
+        const dayNames = [
+            'Segunda-feira', 'Terça-feira', 'Quarta-feira', 
+            'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo'
+        ];
+
+        // Generate days using JavaScript
+        const daysInfo = [];
+        for (let i = 0; i < 7; i++) {
+            const currentDay = new Date(monday);
+            currentDay.setDate(monday.getDate() + i);
+            const dayStr = currentDay.toISOString().split('T')[0];
+            
+            // Find meal data for this day
+            const mealData = mealsResult.rows.find(m => 
+                m.data.toISOString().split('T')[0] === dayStr
+            ) || {
+                almoco_colegio_count: 0,
+                almoco_levar_count: 0,
+                total_almoco: 0,
+                total_janta: 0
+            };
+
+            const totalRefeicoes = parseInt(mealData.total_almoco) + parseInt(mealData.total_janta);
+
+            daysInfo.push({
+                date: formatDate(currentDay),
+                day: dayNames[i],
+                mealsInfo: {
+                    totalAlmoco: parseInt(mealData.total_almoco),
+                    totalAlmocoLevar: parseInt(mealData.almoco_levar_count),
+                    totalAlmocoColegio: parseInt(mealData.almoco_colegio_count),
+                    totalJanta: parseInt(mealData.total_janta),
+                    totalRefeicoes: totalRefeicoes
+                }
+            });
+        }
+
+        // Calculate week totals
+        const totalAlmoco = daysInfo.reduce((sum, day) => sum + day.mealsInfo.totalAlmoco, 0);
+        const totalJantares = daysInfo.reduce((sum, day) => sum + day.mealsInfo.totalJanta, 0);
+
+        // Format week info
+        const weekInfo = {
+            period: `${formatDate(monday)} a ${formatDate(sunday)}`,
+            totalAlmoco: totalAlmoco,
+            totalJantares: totalJantares,
+            daysInfo: daysInfo
+        };
+
+        // Format notes info
+        const notesInfo = notesResult.rows.map(row => ({
+            name: row.name,
+            note: row.note
+        }));
+
+        return res.status(200).json({
+            message: 'Dashboard report retrieved successfully',
+            data: {
+                weekInfo: weekInfo,
+                notesInfo: notesInfo
+            }
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: 'Failed to retrieve dashboard report'
+        });
+    }
+}
