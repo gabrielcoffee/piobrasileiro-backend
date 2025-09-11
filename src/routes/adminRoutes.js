@@ -85,7 +85,7 @@ router.put('/accommodations/:accommodationId', authMiddleware, adminMiddleware, 
 router.delete('/accommodations/:accommodationId', authMiddleware, adminMiddleware, deleteAccommodation);
 
 // CRUD for quarto
-router.get('/rooms', authMiddleware, adminMiddleware, getRooms);
+router.post('/rooms', authMiddleware, adminMiddleware, getRooms);
 router.get('/rooms/all', authMiddleware, adminMiddleware, getAllRooms);
 router.post('/rooms', authMiddleware, adminMiddleware, createRoom);
 router.put('/rooms/:roomId', authMiddleware, adminMiddleware, updateRoom);

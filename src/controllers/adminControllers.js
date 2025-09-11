@@ -860,26 +860,55 @@ export async function updateAccommodation(req, res) {
 }
 
 export async function deleteAccommodation(req, res) {
-
     const { accommodationId } = req.params;
 
-    try {
-        const result = await pool.query(`DELETE FROM hospedagem WHERE id = $1 RETURNING *`, [accommodationId]);
+    const client = await pool.connect();
 
-        if (result.rowCount === 0) {
-            return res.status(404).json({ message: 'Accommodation not found' 
+    try {
+        await client.query('BEGIN');
+
+        // First, get the hospede_id from the accommodation
+        const accommodationResult = await client.query(
+            `DELETE FROM hospedagem WHERE id = $1
+             RETURNING *`,
+            [accommodationId]
+        );
+
+        if (accommodationResult.rowCount === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ 
+                message: 'Accommodation not found' 
             });
         }
 
+        const hospedeId = accommodationResult.rows[0].hospede_id;
+        const data_chegada = accommodationResult.rows[0].data_chegada;
+        const data_saida = accommodationResult.rows[0].data_saida;
+
+        // Delete all refeicao records for this hospede
+        const refeicaoResult = await client.query(
+            `
+            DELETE FROM refeicao 
+            WHERE hospede_id = $1
+            AND data >= $2 AND data <= $3
+            `,
+            [hospedeId, data_chegada, data_saida]
+        );
+
+        await client.query('COMMIT');
+
         return res.status(200).json({ 
-            message: 'Accommodation deleted successfully', 
-            data: result.rows[0]
+            message: 'Accommodation and related meals deleted successfully', 
         });
+
     } catch (error) {
+        await client.query('ROLLBACK');
         console.error(error);
         return res.status(500).json({ 
             message: 'Failed to delete accommodation' 
         });
+    } finally {
+        client.release();
     }
 }
 
@@ -1530,6 +1559,7 @@ export async function getRoomOccupation(req, res) {
         const result = await pool.query(`
             SELECT 
                 q.id as quarto_id,
+                q.capacidade,
                 q.numero,
                 COALESCE(
                     json_agg(
