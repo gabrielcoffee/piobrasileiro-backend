@@ -185,14 +185,22 @@ export async function getUserMeals(req, res) {
             [monday, sunday, userId, convidadoIds]
         );
 
+        const blockedDatesResult = await pool.query(
+            'SELECT data FROM datas_refeicao_bloqueadas'
+        );
+
         const userMeals = result.rows.filter(meal => meal.tipo_pessoa === 'usuario');
         const guestMeals = result.rows.filter(meal => meal.tipo_pessoa === 'convidado');
+        const blockedDates = blockedDatesResult.rows.map(date => date.data.toISOString().split('T')[0]);
+
+        console.log('blockedDates:', blockedDates);
 
         return res.status(200).json({
             message: result.rows.length > 0 ? "Successfully fetched meals" : "No meals found",
             data: {
                 userMeals: userMeals,
-                guestMeals: guestMeals
+                guestMeals: guestMeals,
+                blockedDates: blockedDates
             }
         });
     } catch (error) {
