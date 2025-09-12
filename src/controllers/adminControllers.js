@@ -6,7 +6,6 @@ export async function createUserAndPerfil(req, res) {
     const {
         // user_auth data
         email,
-        password,
         tipo_usuario,
 
         // perfil data
@@ -16,21 +15,23 @@ export async function createUserAndPerfil(req, res) {
         funcao,
         num_documento,
         tipo_documento,
-        avatar_image_data
+        observacoes
     } = req.body;
 
     // Validation
-    if (!email || !password || !nome_completo) {
+    if (!email || !nome_completo) {
         return res.status(400).json({
             message: 'Email, password and nome_completo are required'
         });
     }
 
+    /*
     if (!isPasswordValid(password, nome_completo, data_nasc)) {
         return res.status(400).json({
             message: "Password can't be validated, because it doesn't folllow the rules"
         })
     }
+    */
 
     try {
         // Check if user already exists
@@ -51,6 +52,8 @@ export async function createUserAndPerfil(req, res) {
         try {
             await client.query('BEGIN');
 
+            const password = 'Senha@123'
+
             // 1. Create user_auth record
             const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -64,9 +67,9 @@ export async function createUserAndPerfil(req, res) {
 
             // 2. Create perfil record
             const perfilResult = await client.query(
-                `INSERT INTO perfil (user_id, nome_completo, data_nasc, genero, funcao, num_documento, tipo_documento, avatar_image_data) 
+                `INSERT INTO perfil (user_id, nome_completo, data_nasc, genero, funcao, num_documento, tipo_documento, observacoes) 
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-                [userId, nome_completo, data_nasc, genero, funcao, num_documento, tipo_documento, avatar_image_data]
+                [userId, nome_completo, data_nasc, genero, funcao, num_documento, tipo_documento, observacoes]
             );
 
             await client.query('COMMIT');
