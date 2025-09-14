@@ -15,6 +15,39 @@ export function getCurrentWeekDates() {
     return { monday, sunday };
 }
 
+// Gets the current week dates but from sunday to next sunday
+export function getCurrentWeekInfoRegular() {
+    const now = new Date();
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const days = Math.floor((now.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
+    const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
+    
+    const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const daysToSunday = dayOfWeek === 0 ? 0 : dayOfWeek; // Days to go back to Sunday
+    
+    const sunday = new Date(now);
+    sunday.setDate(now.getDate() - daysToSunday);
+
+    const weekDates = [];
+    for (let i = 0; i < 8; i++) {
+        const date = new Date(sunday);
+        date.setDate(sunday.getDate() + i);
+        weekDates.push(date);
+    }
+
+    const nextSunday = new Date(sunday);
+    nextSunday.setDate(sunday.getDate() + 7);
+
+    return {
+        weekNumber,
+        weekDates,
+        monday: weekDates[1],
+        sunday: weekDates[7]
+    }
+}
+
+
+
 export function isPasswordValid(password, username, birthdate) {
     if (password.length >= 8 &&
         /[A-Z]/.test(password) &&

@@ -1,5 +1,5 @@
 import pool from '../db.js';
-import { isPasswordValid, getCurrentWeekDates, sqlValuesString } from '../utils.js';
+import { isPasswordValid, getCurrentWeekDates, sqlValuesString, getCurrentWeekInfoRegular } from '../utils.js';
 import bcrypt from 'bcryptjs';
 
 export async function getCommonPerfil(req, res) {
@@ -156,7 +156,8 @@ export async function updateUserPassword(req, res) {
 export async function getUserMeals(req, res) {
 
     const userId = req.userId;
-    const { monday, sunday } = getCurrentWeekDates();
+
+    const { monday, sunday } = getCurrentWeekInfoRegular();
 
     try {
         const convidadoResult = await pool.query(
@@ -192,8 +193,6 @@ export async function getUserMeals(req, res) {
         const userMeals = result.rows.filter(meal => meal.tipo_pessoa === 'usuario');
         const guestMeals = result.rows.filter(meal => meal.tipo_pessoa === 'convidado');
         const blockedDates = blockedDatesResult.rows.map(date => date.data.toISOString().split('T')[0]);
-
-        console.log('blockedDates:', blockedDates);
 
         return res.status(200).json({
             message: result.rows.length > 0 ? "Successfully fetched meals" : "No meals found",
