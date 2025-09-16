@@ -1,10 +1,10 @@
 import cron from "node-cron";
-import { SendConfirmationEmail } from "./mailFunctions.js";
+import { SendReminderEmail } from "./mailFunctions.js";
 
+/* 
 // Runs every Sunday at 08:00
-/*
 cron.schedule("* * * * *", async () => {
     console.log("Running Sunday notification...");
-    SendConfirmationEmail();
+    SendReminderEmail();
 });
 */
