@@ -44,6 +44,7 @@ import {
   getDashboard,
   getDashboardReport,
   getReport,
+  getRequestNotifications,
 } from '../controllers/adminControllers.js';
 import multerMiddleware from '../middleware/multerMiddleware.js';
 
@@ -104,6 +105,7 @@ router.delete('/guests/:guestId', authMiddleware, adminMiddleware, deleteGuest);
 // CRUD for solicitacao
 router.get('/requests', authMiddleware, adminMiddleware, getRequests);
 router.put('/requests/:requestId', authMiddleware, adminMiddleware, visualizeRequest);
+router.get('/requests/notifications', authMiddleware, adminMiddleware, getRequestNotifications);
 
 router.get('/blocked-dates', authMiddleware, adminMiddleware, getBlockedDates);
 router.post('/blocked-dates', authMiddleware, adminMiddleware, addBlockedDates);

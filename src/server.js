@@ -9,9 +9,12 @@ import './mailing/cron.js';
 const app = express();  
 const PORT = process.env.PORT || 3003;
 
+app.use(cors());
+
 // Initial Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 
 // Routes
 app.use('/user', userRoutes);

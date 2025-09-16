@@ -1077,6 +1077,26 @@ export async function deleteGuest(req, res) {
     }
 }
 
+export async function getRequestNotifications(req, res) {
+
+
+    try {
+        const result = await pool.query(`SELECT COUNT(*) FROM solicitacao WHERE visualizada = FALSE`);
+
+        const count = result.rows[0].count;
+
+        return res.status(200).json({ 
+            message: count > 0 ? 'Request notifications fetched successfully' : 'No request notifications found',
+            data: count
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ 
+            message: 'Failed to fetch request notifications' 
+        });
+    }
+}
+
 // REQUESTS (solicitacao)
 export async function getRequests(req, res) {
     try {
