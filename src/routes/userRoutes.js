@@ -1,6 +1,16 @@
 import express from 'express';
 import authMiddleware from '../middleware/authMiddleware.js';
-import { createGuestMeal, deleteGuestMeal, getCommonPerfil, getGuestMeals, getUserMeals, updatePerfilAvatar, updatePerfilName, updateUserPassword, upsertMeals } from '../controllers/userControllers.js';
+import { 
+    createGuestMeal,
+    deleteGuestMeal, 
+    getCommonPerfil, 
+    getGuestMeals, 
+    getUserMeals, 
+    updatePerfilAvatar, 
+    updatePerfilName, 
+    updateUserPassword, 
+    upsertMeals 
+} from '../controllers/userControllers.js';
 import multerMiddleware from '../middleware/multerMiddleware.js';
 
 const router = express.Router();

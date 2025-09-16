@@ -1,7 +1,8 @@
 import pool from '../db.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { getUserLoginData } from '../utils.js';
+import { generateResetToken } from '../utils.js';
+import { SendResetPasswordEmail } from '../mailing/mailFunctions.js';
 
 export async function LoginUser(req, res) {
     const { email, password } = req.body;
@@ -99,5 +100,107 @@ export async function emailForgotPassword(req, res) {
         return res.status(500).json({
             message: 'Failed to send email'
         });
+    }
+}
+
+
+// Used to send the reset password email and create the token on the database
+export async function forgotPassword(req, res) {
+    const { email } = req.body;
+
+    console.log(email);
+
+    const userResult = await pool.query(`
+        SELECT ua.id, ua.email, p.nome_completo FROM user_auth ua
+        JOIN perfil p ON ua.id = p.user_id
+        WHERE ua.email = $1`,
+        [email]);
+    const user = userResult.rows[0] || null;
+
+    if (!user) {    
+        return res.status(200).send("If that account exists, an email was sent.");
+    }
+
+    const token = await generateResetToken();
+
+    const tokenResult = await pool.query(
+        `INSERT INTO password_reset (user_id, token_hash) VALUES ($1, $2)`,
+        [user.id, token]
+    )
+  
+    const resetLink = `https://piobrasileiroapp.com/reset-password?token=${token}`;
+
+    await SendResetPasswordEmail(user.email, user.nome_completo, resetLink);
+  
+    res.send("Password reset email sent.");
+}
+
+
+export async function resetPassword(req, res) {
+    const { token, password, newPassword } = req.body;
+
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        if (!token || !password || !newPassword) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({
+                message: 'Token, password and new password are required'
+            })
+        }
+
+        if (password !== newPassword) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({
+                message: 'Password and new password do not match'
+            })
+        }
+
+
+
+        const userResult = await pool.query(`
+            SELECT user_id FROM password_reset
+            WHERE token_hash = $1
+            AND expires_at > NOW()
+        `, [token]);
+
+        if (userResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(200).send("Invalid token");
+        }
+
+
+
+        const changeResult = await pool.query(`
+            UPDATE user_auth
+            SET password = $1
+            WHERE id = $2
+        `, [password, userResult.rows[0].user_id]);
+
+        if (changeResult.rowCount === 0) {
+            await client.query('ROLLBACK');
+            return res.status(200).send("Failed to change password");
+        }
+
+
+
+        const deleteToken = await pool.query(`
+            DELETE FROM password_reset
+            WHERE token_hash = $1
+        `, [token]);
+
+        if (deleteToken.rowCount === 0) {
+            await client.query('ROLLBACK');
+            return res.status(200).send("Invalid token");
+        }
+    } catch {
+        await client.query('ROLLBACK');
+        return res.status(500).json({
+            message: "Failed to reset password"
+        });
+    } finally {
+        client.release();
     }
 }

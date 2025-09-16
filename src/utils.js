@@ -1,4 +1,5 @@
 import pool from "./db.js";
+import crypto from "crypto";
 
 export function getCurrentWeekDates() {
     const today = new Date();
@@ -127,3 +128,7 @@ export const getListOfDatesFromCheckInToCheckOut = (data_chegada, data_saida) =>
     }
     return dates;
 }
+
+export function generateResetToken() {
+    return crypto.randomBytes(32).toString("hex"); // secure random token
+  }
