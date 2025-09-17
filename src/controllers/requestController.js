@@ -14,7 +14,6 @@ export async function createRequest(req, res) {
     console.log('voce_e_padre:', voce_e_padre);
     console.log('--------------------------------');
     console.log('');
-    console.log('');
 
     const num_telefone = telefone;
     const data_chegada = data_de_inicio;
@@ -27,7 +26,6 @@ export async function createRequest(req, res) {
             message: 'All fields are required'
         });
     }
-    console.log('not empty');
 
     //check if data_chegada is before data_saida
     if (data_chegada > data_saida) {
@@ -35,7 +33,6 @@ export async function createRequest(req, res) {
             message: 'Data de chegada deve ser antes da data de saída'
         });
     }
-    console.log('data_chegada is before data_saida');
 
     // check if num_pessoas is greater than 0
     if (num_pessoas <= 0) {
@@ -43,7 +40,6 @@ export async function createRequest(req, res) {
             message: 'Número de pessoas deve ser maior que 0'
         });
     }
-    console.log('num_pessoas is greater than 0');
 
     // check if email is valid
     if (!email.includes('@')) {
@@ -51,7 +47,6 @@ export async function createRequest(req, res) {
             message: 'Email inválido'
         });
     }
-    console.log('email is valid');
 
     // check if none of the fields are over 200 characters
     if (nome.length > 200 || num_telefone.length > 20 || email.length > 200) {
@@ -59,7 +54,6 @@ export async function createRequest(req, res) {
             message: 'Fields must be less than 200 characters'
         });
     }
-    console.log('none of the fields are over 200 characters');
 
     try {
         const result = await pool.query(
