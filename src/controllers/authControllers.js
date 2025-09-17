@@ -132,8 +132,6 @@ export async function forgotPassword(req, res) {
   
     const resetLink = `https://piobrasileiroapp.com/reset-password?token=${token}&nome_completo=${user.nome_completo}&email=${user.email}`;
 
-    console.log('resetLink:', resetLink);
-
     await SendResetPasswordEmail(user.email, user.nome_completo, resetLink);
   
     res.send("Password reset email sent.");
@@ -165,12 +163,8 @@ export async function resetPassword(req, res) {
             await client.query('ROLLBACK');
             return res.status(200).send("Invalid token");
         }
-
-        console.log('newPassword:', newPassword);
         
         const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-
-        console.log('hashedNewPassword:', hashedNewPassword);
 
         const changeResult = await pool.query(`
             UPDATE user_auth

@@ -1086,7 +1086,7 @@ export async function getRequestNotifications(req, res) {
         const count = result.rows[0].count;
 
         return res.status(200).json({ 
-            message: count > 0 ? 'Request notifications fetched successfully' : 'No request notifications found',
+            message: result.rows.length > 0 ? 'Request notifications fetched successfully' : 'No request notifications found',
             data: count
         });
     } catch (error) {
@@ -1424,9 +1424,7 @@ export async function getBlockedDates(req, res) {
 }
 
 export async function addBlockedDates(req, res) {
-    const { datas } = req.body; 
-
-    console.log('datas:', datas);
+    const { datas } = req.body;
     
     if (!datas || !Array.isArray(datas) || datas.length === 0) {
         return res.status(400).json({

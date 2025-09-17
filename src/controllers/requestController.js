@@ -1,3 +1,5 @@
+import pool from "../db.js";
+
 export async function createRequest(req, res) {
     const { nome, num_telefone, email, data_chegada, data_saida, num_pessoas } = req.body;
 
