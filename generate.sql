@@ -42,9 +42,14 @@ CREATE TABLE solicitacao (
     data_chegada DATE NOT NULL,
     data_saida DATE NOT NULL,
     num_pessoas int not null,
+    nacionalidade varchar(100) not null,
+    quantidade_adultos int not null,
+    quantidade_criancas int not null,
+    voce_e_padre boolean default false,
     visualizada boolean default false,
     criado_em TIMESTAMP DEFAULT now()
 );
+
 
 CREATE TABLE quarto (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

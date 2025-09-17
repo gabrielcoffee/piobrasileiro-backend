@@ -1,8 +1,27 @@
 import pool from "../db.js";
 
 export async function createRequest(req, res) {
-    const { nome, num_telefone, email, data_chegada, data_saida, num_pessoas } = req.body;
+    const { nome, telefone, nacionalidade, email, data_de_inicio, data_de_fim, quantidade_adultos, quantidade_criancas, voce_e_padre } = req.body;
 
+    console.log('nome:', nome);
+    console.log('telefone:', telefone);
+    console.log('nacionalidade:', nacionalidade);
+    console.log('email:', email);
+    console.log('data_de_inicio:', data_de_inicio);
+    console.log('data_de_fim:', data_de_fim);
+    console.log('quantidade_adultos:', quantidade_adultos);
+    console.log('quantidade_criancas:', quantidade_criancas);
+    console.log('voce_e_padre:', voce_e_padre);
+    console.log('--------------------------------');
+    console.log('');
+    console.log('');
+
+    const num_telefone = telefone;
+    const data_chegada = data_de_inicio;
+    const data_saida = data_de_fim;
+    const num_pessoas = quantidade_adultos + quantidade_criancas;
+
+    
     if (!nome || !num_telefone || !email || !data_chegada || !data_saida || !num_pessoas) {
         return res.status(400).json({
             message: 'All fields are required'
@@ -44,10 +63,10 @@ export async function createRequest(req, res) {
 
     try {
         const result = await pool.query(
-            `INSERT INTO solicitacao (nome, num_telefone, email, data_chegada, data_saida, num_pessoas)
-             VALUES ($1, $2, $3, $4, $5, $6)
+            `INSERT INTO solicitacao (nome, num_telefone, email, data_chegada, data_saida, num_pessoas, nacionalidade, quantidade_adultos, quantidade_criancas, voce_e_padre)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
              RETURNING *`,
-            [nome, num_telefone, email, data_chegada, data_saida, num_pessoas]
+            [nome, num_telefone, email, data_chegada, data_saida, num_pessoas, nacionalidade, quantidade_adultos, quantidade_criancas, voce_e_padre]
         );
 
         return res.status(200).json({
