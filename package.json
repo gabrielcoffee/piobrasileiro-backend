@@ -13,7 +13,6 @@
     "author": "Gabriel Fernandes Pereira",
     "license": "ISC",
     "dependencies": {
-        "@aws-sdk/client-ses": "^3.888.0",
         "bcryptjs": "^3.0.2",
         "cors": "^2.8.5",
         "express": "^4.21.2",

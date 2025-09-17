@@ -1,7 +1,6 @@
 /// AWS SES
 
-import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
-
+/*
 const sesClient = new SESClient({
   region: "sa-east-1",
   credentials: {
@@ -25,6 +24,7 @@ export async function sendEmailAWS({ to, subject, html }) {
 
   return sesClient.send(command);
 }
+*/
 
 
 /// MailerSend
@@ -35,7 +35,7 @@ const mailerSend = new MailerSend({
   apiKey: process.env.MAILERSEND_API_KEY,
 });
 
-const sentFrom = new Sender("notifications@piobrasileiroapp.com", "Pio Brasileiro");
+const sentFrom = new Sender("notifications@piobrasileiroapp.com", "Colégio Pio Brasileiro");
 
 export async function sendEmailMailerSend({ to, subject, html }) {
   const recipients = [new Recipient(to)];
@@ -45,7 +45,7 @@ export async function sendEmailMailerSend({ to, subject, html }) {
     .setTo(recipients)
     .setSubject(subject)
     .setHtml(html)
-    .setText(html.replace(/<[^>]+>/g, ""));
+    .setText(html);
 
   return mailerSend.email.send(emailParams);
 }

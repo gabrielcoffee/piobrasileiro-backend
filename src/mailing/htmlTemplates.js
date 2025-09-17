@@ -1,112 +1,81 @@
 const reminderHtml= (nome_completo) => {
     return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <style>
-            * {
-                font-family: 'Inter', sans-serif;
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-                font-weight: 400;
-            }
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>PONTIFÍCIO COLÉGIO PIO BRASILEIRO</title>
+        </head>
+        <body style="font-family: 'Inter', sans-serif; margin: 0; padding: 0; background-color: #f0f0f0;">
 
-            .container {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                flex-direction: column;
-                background-color: #f0f0f0;
-                margin-left: auto;
-                margin-right: auto;
-                width: 100%;
-                max-width: 700px;
-                border-radius: 1rem;
-            }
+            <center>
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                    <tr>
+                        <td align="center" style="padding: 20px 0;">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 700px; border-radius: 16px; background-color: #f0f0f0;">
 
-            .box-header {
-                display: flex;
-                align-items: center;
-                gap: 1rem;
-                padding: 2rem;
-            }
+                                <tr>
+                                    <td style="padding: 16px; text-align: center;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
+                                            <tr>
+                                                <td valign="middle" style="padding-right: 16px;">
+                                                    <img src="https://www.piobrasileiro.com/wp-content/uploads/2025/05/cropped-brasao-sem-fundo.png" width="50" alt="Logo colégio pio" style="display: block;">
+                                                    
+                                                </td>
+                                                <td valign="middle">
+                                                    <span style="font-family: 'Inter', sans-serif; font-weight: 400; font-size: 16px; color: #000000; white-space: nowrap;">PONTIFÍCIO COLÉGIO PIO BRASILEIRO</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
 
-            .box-intro {
-                display: flex;
-                align-items: center;
-                flex-direction: column;
-                gap: 2rem;
-                margin-bottom: 2rem;
-            }
+                                <tr>
+                                    <td align="center" style="padding: 20px;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #fff; border-radius: 16px; padding: 48px; max-width: 650px;">
+                                            
+                                            <tr>
+                                                <td align="center">
+                                                    <h2 style="font-family: 'Inter', sans-serif; font-weight: 400; font-size: 24px; margin: 0 0 32px 0;">Olá, ${nome_completo.split(' ')[0]}!</h2>
+                                                    <div style="background-color: #EAFCE9; padding: 16px; border-radius: 50%; width: 34px; height: 34px; margin: 0 auto; display: block;">
+                                                        <img src="https://bucket.mailersendapp.com/z3m5jgr8emldpyo6/vz9dlemqe8q4kj50/images/9fe6559e-6f42-43d4-b301-8a3680f1143a.png" width="34" height="34" alt="Alarm Clock Icon" style="display: block;">
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            
+                                            <tr>
+                                                <td style="padding-top: 24px; text-align: center;">
+                                                    <p style="font-family: 'Inter', sans-serif; font-weight: 400; line-height: 1.5; font-size: 16px; margin: 0 0 24px 0;">Lembramos que o agendamento das refeições da semana deve ser feito até às 19 horas de hoje.</p>
+                                                    <p style="font-family: 'Inter', sans-serif; font-weight: 400; line-height: 1.5; font-size: 16px; margin: 0 0 24px 0;">Essa organização nos ajuda a preparar a quantidade correta de alimentos, evitando desperdícios e garantindo a refeição de todos!</p>
+                                                </td>
+                                            </tr>
 
-            .icon {
-                background-color: #EAFCE9;
-                padding: 1rem;
-                border-radius: 100%;
-                display: flex;
-                align-items: center;
-            }
-
-            .box {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                margin: 1.25rem;
-                background-color: #fff;
-                border-radius: 1rem;
-                padding: 4rem;
-            }
-
-            .box-content {
-                display: flex;
-                flex-direction: column;
-                gap: 1rem;
-                font-weight: 400;
-                line-height: 1.5;
-            }
-
-            .platform-link {
-                text-align: left;
-                color: #267024;
-                padding-bottom: 2rem;
-                border-bottom: 2px solid #F1F5F9;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-
-            <div class="box-header">
-                <img src="https://www.piobrasileiro.com/wp-content/uploads/2025/05/cropped-brasao-sem-fundo.png" width="50" alt="Logo colégio pio">
-                <span>PONTIFÍCIO COLÉGIO PIO BRASILEIRO</span>
-            </div>
-
-            <div class="box">
-
-                <div class="box-intro">
-                    <h2>Olá, ${nome_completo.split(' ')[0]}</h2>
-                    <div class="icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#267024" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alarm-clock-icon lucide-alarm-clock"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/><path d="M6.38 18.7 4 21"/><path d="M17.64 18.67 20 21"/></svg>
-                    </div>
-                    </div>
-
-                <div class="box-content">
-                    <p>Lembramos que o agendamento das refeições da semana deve ser feito até às 19 horas de hoje.</p>
-                    <p>Essa organização nos ajuda a preparar a quantidade correta de alimentos, evitando desperdícios e garantido a refeição de todos!</p>
-
-                    <a class="platform-link" href="https://www.piobrasileiroapp.com">Acessar plataforma</a>
-
-                    <p>Agradecemos pela colaboração e compreensão.</p>
-                    <p>Atenciosamente<br><strong>Pontifício Colégio Pio Brasileiro</strong></p>
-                    
-                </div>
-
-            </div>
-        </div>
-    </body>
-    </html>
-    `
+                                            <tr>
+                                                <td style="padding: 0 0 32px 0; border-bottom: 2px solid #F1F5F9;">
+                                                    <p style="text-align: left; font-family: 'Inter', sans-serif; font-weight: 400; margin: 0;">
+                                                        <a href="https://www.piobrasileiroapp.com" style="color: #267024; font-size: 16px; text-decoration: none; font-weight: 400;">Acessar plataforma</a>
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                            
+                                            <tr>
+                                                <td style="padding-top: 24px;">
+                                                    <p style="font-family: 'Inter', sans-serif; font-weight: 400; line-height: 1.5; font-size: 16px; margin: 0 0 8px 0;">Agradecemos pela colaboração e compreensão.</p>
+                                                    <p style="font-family: 'Inter', sans-serif; font-weight: 400; line-height: 1.5; font-size: 16px; margin: 0;">Atenciosamente<br><strong style="font-weight: 700;">Pontifício Colégio Pio Brasileiro</strong></p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </center>
+        </body>
+        </html>
+    `; 
 }
 
 const confirmationHtml = (nome_completo, monday, mealsInfo) => {
@@ -119,14 +88,21 @@ const confirmationHtml = (nome_completo, monday, mealsInfo) => {
 
         formattedDays.push({
             date: dayStr,
-            dayName: currentDay.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + ' - ' + currentDay.toLocaleDateString('pt-BR', { weekday: 'long' })
+            dayName: currentDay.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + ' - ' + (currentDay.toLocaleDateString('pt-BR', { weekday: 'long' }).charAt(0).toUpperCase() + currentDay.toLocaleDateString('pt-BR', { weekday: 'long' }).slice(1))
         });
     }
 
-    const formattedMeals = formattedDays.map(day => {
+    const formattedDaysWithMeals = formattedDays.map(day => {
         const mealData = mealsInfo.find(meal => meal.data.toISOString().split('T')[0] === day.date);
 
-        console.log('mealData:', mealData);
+        if (!mealData) {
+            return {
+                date: day.date,
+                dayName: day.dayName,
+                almoco: 'X',
+                janta: 'X'
+            }
+        }
 
         return {
             date: day.date,
@@ -136,323 +112,179 @@ const confirmationHtml = (nome_completo, monday, mealsInfo) => {
         }
     })
 
-    console.log('formattedMeals:', formattedMeals);
-
+    const formattedHtmlMeals = formattedDaysWithMeals.map(meal => {
+        return `
+            <tr>
+                <td style="font-family: 'Inter', sans-serif; font-weight: 400; font-size: 14px; padding: 12px; text-align: center; border-bottom: 1px solid #e2e8f0;">${meal.dayName}</td>
+                <td style="font-family: 'Inter', sans-serif; font-weight: 400; font-size: 14px; padding: 12px; text-align: center; border-bottom: 1px solid #e2e8f0;">${meal.almoco}</td>
+                <td style="font-family: 'Inter', sans-serif; font-weight: 400; font-size: 14px; padding: 12px; text-align: center; border-bottom: 1px solid #e2e8f0;">${meal.janta}</td>
+            </tr>
+        `
+    }).join('');
 
     return `
-    <!DOCTYPE html>
-    <html lang="en">
+        <!DOCTYPE html>
+        <html lang="en">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Document</title>
+            <title>PONTIFÍCIO COLÉGIO PIO BRASILEIRO</title>
         </head>
+        <body style="font-family: 'Inter', sans-serif; margin: 0; padding: 0; background-color: #f0f0f0;">
 
-        <style>
-            * {
-                font-family: 'Inter', sans-serif;
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-                font-weight: 400;
-            }
+            <center>
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                    <tr>
+                        <td align="center" style="padding: 20px 0;">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 700px; border-radius: 16px; background-color: #f0f0f0;">
 
-            .container {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                flex-direction: column;
-                background-color: #f0f0f0;
-                margin-left: auto;
-                margin-right: auto;
-                width: 100%;
-                max-width: 700px;
-                border-radius: 1rem;
-            }
+                                <tr>
+                                    <td style="padding: 16px; text-align: center;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
+                                            <tr>
+                                                <td valign="middle" style="padding-right: 16px;">
+                                                    <img src="https://www.piobrasileiro.com/wp-content/uploads/2025/05/cropped-brasao-sem-fundo.png" width="50" alt="Logo colégio pio" style="display: block;">
+                                                </td>
+                                                <td valign="middle">
+                                                    <span style="font-family: 'Inter', sans-serif; font-weight: 400; font-size: 16px; color: #000000; white-space: nowrap;">PONTIFÍCIO COLÉGIO PIO BRASILEIRO</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
 
-            .box-header {
-                display: flex;
-                align-items: center;
-                gap: 1rem;
-                padding: 1rem;
-            }
+                                <tr>
+                                    <td align="center" style="padding: 20px;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #fff; border-radius: 16px; padding: 48px; max-width: 650px;">
+                                            
+                                            <tr>
+                                                <td align="center">
+                                                    <h2 style="font-family: 'Inter', sans-serif; font-weight: 400; font-size: 24px; margin: 0 0 32px 0;">Olá, ${nome_completo.split(' ')[0]}!</h2>
+                                                    <div style="background-color: #EAFCE9; padding: 16px; border-radius: 50%; width: 34px; height: 34px; margin: 0 auto; display: block;">
+                                                        <img src="https://bucket.mailersendapp.com/z3m5jgr8emldpyo6/vz9dlemqe8q4kj50/images/9fe6559f-2a52-43fc-8a75-2ee95b2a7a9a.png" width="34" height="34" alt="Check Icon" style="display: block;">
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            
+                                            <tr>
+                                                <td style="padding-top: 24px; text-align: center;">
+                                                    <p style="font-family: 'Inter', sans-serif; font-weight: 400; line-height: 1.5; font-size: 16px; margin: 0 0 24px 0;">Seu agendamento de refeições para esta semana foi registrado com sucesso.</p>
+                                                    <p style="font-family: 'Inter', sans-serif; font-weight: 400; line-height: 1.5; font-size: 16px; margin: 0 0 24px 0;">Segue abaixo o resumo para sua conferência:</p>
+                                                </td>
+                                            </tr>
+                                            
+                                            <tr>
+                                                <td style="padding-bottom: 24px; text-align: center;">
+                                                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-collapse: collapse; border-spacing: 0;">
+                                                        <tr style="background-color: #f1f5f9;">
+                                                            <td style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 14px; padding: 12px; text-align: center;">Dia da semana</td>
+                                                            <td style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 14px; padding: 12px; text-align: center;">Almoço</td>
+                                                            <td style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 14px; padding: 12px; text-align: center;">Janta</td>
+                                                        </tr>
+                                                        
+                                                        ${formattedHtmlMeals}
+                                                    </table>
+                                                </td>
+                                            </tr>
 
-            .box-intro {
-                display: flex;
-                align-items: center;
-                flex-direction: column;
-                gap: 2rem;
-                margin-bottom: 2rem;
-            }
-
-            .icon {
-                background-color: #EAFCE9;
-                padding: 1rem;
-                border-radius: 100%;
-                display: flex;
-                align-items: center;
-            }
-
-            .box {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                margin: 1.25rem;
-                background-color: #fff;
-                border-radius: 1rem;
-                padding: 3rem;
-            }
-
-            .box-content {
-                display: flex;
-                flex-direction: column;
-                gap: 1.5rem;
-                font-weight: 400;
-                line-height: 1.5;
-            }
-
-            .platform-link {
-                border-bottom: 2px solid #F1F5F9;
-            }
-
-            .table {
-                width: 100%;
-                border-collapse: collapse;
-                border: 2px solid #E2E8F0;
-                border-radius: .5rem;
-            }
-
-            .table-header {
-                display: flex;
-                align-items: center;
-                padding: .2rem;
-                background-color: #f8f9fa;
-                border-bottom: 1px solid #E2E8F0;
-            }
-
-            .table-header span {
-                font-weight: 500;
-                flex: 1;
-                text-align: center;
-                padding: 0.5rem;
-            }
-
-            .table-row {
-                display: flex;
-                align-items: center;
-                padding: .2rem;
-                border-bottom: 1px solid #E2E8F0;
-            }
-
-            .table-row:last-child {
-                border-bottom: none;
-            }
-
-            .table-row span {
-                flex: 1;
-                text-align: center;
-                padding: 0.25rem;
-            }
-        </style>
-
-        <body>
-            <div class="container">
-
-                <div class="box-header">
-                    <img src="https://www.piobrasileiro.com/wp-content/uploads/2025/05/cropped-brasao-sem-fundo.png" width="50" alt="Logo colégio pio">
-                    <span>PONTIFÍCIO COLÉGIO PIO BRASILEIRO</span>
-                </div>
-
-                <div class="box">
-
-                    <div class="box-intro">
-                        <h2>Olá, ${nome_completo.split(' ')[0]}!</h2>
-                        <div class="icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#267024" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-icon lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
-                            </div>
-                        </div>
-
-                    <div class="box-content">
-                        <p>Seu agendamento de refeições para esta semana foi registrado com sucesso.</p>
-                        <p>Segue abaixo o resumo para sua conferência:</p>
-
-                        <div class="table">
-                            <div class="table-header">
-                                <span>Dia da semana</span>
-                                <span>Almoço</span>
-                                <span>Janta</span>
-                            </div>
-                            
-                            <div class="table-row">
-                                <span>28/07 - Segunda-feira</span>
-                                <span>No Colégio Pio</span>
-                                <span>No Colégio Pio</span>
-                            </div>
-                            
-                            <div class="table-row">
-                                <span>29/07 - Terça-feira</span>
-                                <span>X</span>
-                                <span>No Colégio Pio</span>
-                            </div>
-                            
-                            <div class="table-row">
-                                <span>30/07 - Quarta-feira</span>
-                                <span>Para levar</span>
-                                <span>X</span>
-                            </div>
-                            
-                            <div class="table-row">
-                                <span>31/07 - Quinta-feira</span>
-                                <span>X</span>
-                                <span>X</span>
-                            </div>
-                            
-                            <div class="table-row">
-                                <span>01/08 - Sexta-feira</span>
-                                <span>No Colégio Pio</span>
-                                <span>No Colégio Pio</span>
-                            </div>
-                            
-                            <div class="table-row">
-                                <span>02/08 - Sábado</span>
-                                <span>No Colégio Pio</span>
-                                <span>No Colégio Pio</span>
-                            </div>
-                            
-                            <div class="table-row">
-                                <span>03/08 - Domingo</span>
-                                <span>No Colégio Pio</span>
-                                <span>No Colégio Pio</span>
-                            </div>
-                            
-                        </div>
-
-                        <p>Caso precise alterar algum dia ou refeição, acesse o sistema antes do prazo limite para ajustes.</p>
-
-                        <a class="platform-link"></a>
-
-                        <p>Agradecemos pela colaboração e compreensão.</p>
-                        <p>Atenciosamente<br><strong>Pontifício Colégio Pio Brasileiro</strong></p>
-                        
-                    </div>
-
-                </div>
-            </div>
+                                            <tr>
+                                                <td>
+                                                    <p style="font-family: 'Inter', sans-serif; font-weight: 400; line-height: 1.5; font-size: 16px; margin: 0 0 24px 0;">Caso precise alterar algum dia ou refeição, acesse o sistema antes do prazo limite para ajustes.</p>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding-top: 24px;">
+                                                    <p style="font-family: 'Inter', sans-serif; font-weight: 400; line-height: 1.5; font-size: 16px; margin: 0 0 8px 0;">Agradecemos pela colaboração e compreensão.</p>
+                                                    <p style="font-family: 'Inter', sans-serif; font-weight: 400; line-height: 1.5; font-size: 16px; margin: 0;">Atenciosamente<br><strong style="font-weight: 700;">Pontifício Colégio Pio Brasileiro</strong></p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </center>
         </body>
-    </html>
+        </html>
     `
 }
 
-const resetPasswordHtml = (nome_completo, reset_token) => {
+const resetPasswordHtml = (nome_completo, resetLink) => {
     return `
-    <!DOCTYPE html>
-    <html lang="en">
+        <!DOCTYPE html>
+        <html lang="en">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Document</title>
+            <title>PONTIFÍCIO COLÉGIO PIO BRASILEIRO</title>
         </head>
+        <body style="font-family: 'Inter', sans-serif; margin: 0; padding: 0; background-color: #f0f0f0;">
 
-        <style>
-            * {
-                font-family: 'Inter', sans-serif;
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-                font-weight: 400;
-            }
+            <center>
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                    <tr>
+                        <td align="center" style="padding: 20px 0;">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 700px; border-radius: 16px; background-color: #f0f0f0;">
 
-            .container {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                flex-direction: column;
-                background-color: #f0f0f0;
-                margin-left: auto;
-                margin-right: auto;
-                width: 100%;
-                max-width: 700px;
-                border-radius: 1rem;
-            }
+                                <tr>
+                                    <td style="padding: 16px; text-align: center;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
+                                            <tr>
+                                                <td valign="middle" style="padding-right: 16px;">
+                                                    <img src="https://www.piobrasileiro.com/wp-content/uploads/2025/05/cropped-brasao-sem-fundo.png" width="50" alt="Logo colégio pio" style="display: block;">
+                                                </td>
+                                                <td valign="middle">
+                                                    <span style="font-family: 'Inter', sans-serif; font-weight: 400; font-size: 16px; color: #000000; white-space: nowrap;">PONTIFÍCIO COLÉGIO PIO BRASILEIRO</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
 
-            .box-header {
-                display: flex;
-                align-items: center;
-                gap: 1rem;
-                padding: 1rem;
-            }
+                                <tr>
+                                    <td align="center" style="padding: 20px;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #fff; border-radius: 16px; padding: 48px; max-width: 650px;">
+                                            
+                                            <tr>
+                                                <td align="center">
+                                                    <h2 style="font-family: 'Inter', sans-serif; font-weight: 400; font-size: 24px; margin: 0 0 32px 0;">Olá, ${nome_completo.split(' ')[0]}!</h2>
+                                                    <div style="background-color: #EAFCE9; padding: 16px; border-radius: 50%; width: 34px; height: 34px; margin: 0 auto; display: block;">
+                                                        <img src="https://bucket.mailersendapp.com/z3m5jgr8emldpyo6/vz9dlemqe8q4kj50/images/9fe6559f-f00b-48fa-8f41-e1b0b61c601c.png" width="34" height="34" alt="Icon" style="display: block;">
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            
+                                            <tr>
+                                                <td style="padding-top: 24px; text-align: center;">
+                                                    <p style="font-family: 'Inter', sans-serif; font-weight: 400; line-height: 1.5; font-size: 16px; margin: 0 0 24px 0;">Clique no botão abaixo para alterar sua senha:</p>
+                                                </td>
+                                            </tr>
 
-            .box-intro {
-                display: flex;
-                align-items: center;
-                flex-direction: column;
-                gap: 2rem;
-                margin-bottom: 2rem;
-            }
-
-            .icon {
-                background-color: #EAFCE9;
-                padding: 1rem;
-                border-radius: 100%;
-                display: flex;
-                align-items: center;
-            }
-
-            .box {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                margin: 1.25rem;
-                background-color: #fff;
-                border-radius: 1rem;
-                padding: 3rem;
-            }
-
-            .box-content {
-                display: flex;
-                flex-direction: column;
-                gap: 1.5rem;
-                font-weight: 400;
-                line-height: 1.5;
-            }
-
-            .platform-link {
-                text-align: left;
-                color: #267024;
-                padding-bottom: 2rem;
-                border-bottom: 2px solid #F1F5F9;
-            }
-        </style>
-
-        <body>
-            <div class="container">
-
-                <div class="box-header">
-                    <img src="https://www.piobrasileiro.com/wp-content/uploads/2025/05/cropped-brasao-sem-fundo.png" width="50" alt="Logo colégio pio">
-                    <span>PONTIFÍCIO COLÉGIO PIO BRASILEIRO</span>
-                </div>
-
-                <div class="box">
-
-                    <div class="box-intro">
-                        <h2>Olá, ${nome_completo.split(' ')[0]}!</h2>
-                        <div class="icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#267024" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-key-round-icon lucide-key-round"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></svg>
-                        </div>
-                        </div>
-
-                    <div class="box-content">
-                        <p>Clique no botão abaixo para alterar sua senha:</p>
-
-                        <a class="platform-link" href="https://www.piobrasileiroapp.com/reset-password?token=${reset_token}">Alterar senha</a>
-
-                        <p>Atenciosamente<br><strong>Pontifício Colégio Pio Brasileiro</strong></p>
-                        
-                    </div>
-                </div>
-            </div>
+                                            <tr>
+                                                <td style="padding: 0 0 32px 0; border-bottom: 2px solid #F1F5F9;">
+                                                    <p style="text-align: left; font-family: 'Inter', sans-serif; font-weight: 400; margin: 0;">
+                                                        <a href="${resetLink}" style="color: #267024; font-size: 16px; text-decoration: none; font-weight: 400;">Link para alterar senha: ${resetLink}</a>
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                            
+                                            <tr>
+                                                <td style="padding-top: 24px;">
+                                                    <p style="font-family: 'Inter', sans-serif; font-weight: 400; line-height: 1.5; font-size: 16px; margin: 0;">Atenciosamente<br><strong style="font-weight: 700;">Pontifício Colégio Pio Brasileiro</strong></p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </center>
         </body>
-    </html>
+        </html>
     `
 }
 

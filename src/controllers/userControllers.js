@@ -1,4 +1,5 @@
 import pool from '../db.js';
+import { SendConfirmationEmail } from '../mailing/mailFunctions.js';
 import { isPasswordValid, getCurrentWeekDates, sqlValuesString, getCurrentWeekInfoRegular } from '../utils.js';
 import bcrypt from 'bcryptjs';
 
@@ -296,6 +297,8 @@ export async function upsertMeals(req, res) {
         `
 
         const result = await pool.query(query, flatValues);
+
+        await SendConfirmationEmail(userId);
 
         return res.status(200).json({
             message: "Meals created successfully",

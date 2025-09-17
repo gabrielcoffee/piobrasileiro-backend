@@ -108,12 +108,10 @@ export async function emailForgotPassword(req, res) {
 export async function forgotPassword(req, res) {
     const { email } = req.body;
 
-    console.log(email);
-
     const userResult = await pool.query(`
         SELECT ua.id, ua.email, p.nome_completo FROM user_auth ua
         JOIN perfil p ON ua.id = p.user_id
-        WHERE ua.email = $1`,
+        WHERE LOWER(ua.email) = LOWER($1)`,
         [email]);
     const user = userResult.rows[0] || null;
 
@@ -121,14 +119,20 @@ export async function forgotPassword(req, res) {
         return res.status(200).send("If that account exists, an email was sent.");
     }
 
-    const token = await generateResetToken();
+    const token = generateResetToken();
 
     const tokenResult = await pool.query(
         `INSERT INTO password_reset (user_id, token_hash) VALUES ($1, $2)`,
         [user.id, token]
     )
+
+    if (tokenResult.rowCount === 0) {
+        return res.status(200).send("Failed to create token");
+    }
   
-    const resetLink = `https://piobrasileiroapp.com/reset-password?token=${token}`;
+    const resetLink = `https://piobrasileiroapp.com/reset-password?token=${token}&nome_completo=${user.nome_completo}&email=${user.email}`;
+
+    console.log('resetLink:', resetLink);
 
     await SendResetPasswordEmail(user.email, user.nome_completo, resetLink);
   
@@ -137,28 +141,19 @@ export async function forgotPassword(req, res) {
 
 
 export async function resetPassword(req, res) {
-    const { token, password, newPassword } = req.body;
+    const { token, newPassword } = req.body;
 
     const client = await pool.connect();
 
     try {
         await client.query('BEGIN');
 
-        if (!token || !password || !newPassword) {
+        if (!token || !newPassword) {
             await client.query('ROLLBACK');
             return res.status(400).json({
-                message: 'Token, password and new password are required'
+                message: 'Token and new password are required'
             })
         }
-
-        if (password !== newPassword) {
-            await client.query('ROLLBACK');
-            return res.status(400).json({
-                message: 'Password and new password do not match'
-            })
-        }
-
-
 
         const userResult = await pool.query(`
             SELECT user_id FROM password_reset
@@ -171,19 +166,22 @@ export async function resetPassword(req, res) {
             return res.status(200).send("Invalid token");
         }
 
+        console.log('newPassword:', newPassword);
+        
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
+        console.log('hashedNewPassword:', hashedNewPassword);
 
         const changeResult = await pool.query(`
             UPDATE user_auth
             SET password = $1
             WHERE id = $2
-        `, [password, userResult.rows[0].user_id]);
+        `, [hashedNewPassword, userResult.rows[0].user_id]);
 
         if (changeResult.rowCount === 0) {
             await client.query('ROLLBACK');
             return res.status(200).send("Failed to change password");
         }
-
 
 
         const deleteToken = await pool.query(`
@@ -195,6 +193,10 @@ export async function resetPassword(req, res) {
             await client.query('ROLLBACK');
             return res.status(200).send("Invalid token");
         }
+        await client.query('COMMIT');
+
+        return res.status(200).send("Password reset successfully");
+
     } catch {
         await client.query('ROLLBACK');
         return res.status(500).json({
