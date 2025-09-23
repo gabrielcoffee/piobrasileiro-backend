@@ -1,26 +1,15 @@
 import pool from "../db.js";
 
 export async function createRequest(req, res) {
-    const { nome, telefone, nacionalidade, email, data_de_inicio, data_de_fim, quantidade_adultos, quantidade_criancas, voce_e_padre } = req.body;
+    console.log('body:', req.body);
 
-    console.log('nome:', nome);
-    console.log('telefone:', telefone);
-    console.log('nacionalidade:', nacionalidade);
-    console.log('email:', email);
-    console.log('data_de_inicio:', data_de_inicio);
-    console.log('data_de_fim:', data_de_fim);
-    console.log('quantidade_adultos:', quantidade_adultos);
-    console.log('quantidade_criancas:', quantidade_criancas);
-    console.log('voce_e_padre:', voce_e_padre);
-    console.log('--------------------------------');
-    console.log('');
+    const { nome, telefone, nacionalidade, email, data_de_inicio, data_de_fim, quantidade_adultos, quantidade_criancas, voce_e_padre } = req.body;
 
     const num_telefone = telefone;
     const data_chegada = data_de_inicio;
     const data_saida = data_de_fim;
     const num_pessoas = quantidade_adultos + quantidade_criancas;
 
-    
     if (!nome || !num_telefone || !email || !data_chegada || !data_saida || !num_pessoas) {
         return res.status(400).json({
             message: 'All fields are required'

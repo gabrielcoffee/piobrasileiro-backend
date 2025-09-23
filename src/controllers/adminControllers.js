@@ -1,6 +1,6 @@
 import pool from '../db.js';
 import bcrypt from 'bcryptjs';
-import { getCurrentWeekDates, getListOfDatesFromCheckInToCheckOut, isPasswordValid } from '../utils.js';
+import { getCurrentWeekDates, getListOfDatesFromCheckInToCheckOut } from '../utils.js';
 
 export async function createUserAndPerfil(req, res) {
     const {
@@ -42,7 +42,8 @@ export async function createUserAndPerfil(req, res) {
 
         if (existingUser.rows.length > 0) {
             return res.status(409).json({
-                message: "Email already used"
+                message: "Email already used",
+                error: "email already used"
             });
         }
 
@@ -1589,6 +1590,7 @@ export async function getRoomOccupation(req, res) {
             FROM quarto q
             LEFT JOIN hospedagem h ON q.id = h.quarto_id 
                 AND h.data_saida > CURRENT_DATE
+            WHERE q.active = TRUE
             GROUP BY q.id, q.numero
             ORDER BY q.numero ASC
         `);
