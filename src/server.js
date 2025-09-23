@@ -25,7 +25,6 @@ app.use('/auth', authRoutes);
 
 app.post(
     '/request',
-    cors({ origin: 'https://piobrasileiro.com'}),
     createRequest
 );
 

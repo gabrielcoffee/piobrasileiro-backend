@@ -10,27 +10,19 @@ export async function createRequest(req, res) {
 
     const bodyValues = Object.fromEntries(keyValueArray);
 
-    const { nome, num_telefone, email, data_de_inicio, data_de_fim, quantidade_adultos, quantidade_criancas, voce_e_padre } = bodyValues;
+    const { name, telefone, nacionalidade, email, data_de_inicio, data_de_fim, quantidade_adultos, quantidade_criancas, voce_e_padre } = bodyValues;
 
-    const data_chegada = data_de_inicio;
-    const data_saida = data_de_fim;
     const padre = voce_e_padre ? true : false;
-    const num_pessoas = quantidade_adultos + quantidade_criancas;
+    const num_pessoas = parseInt(quantidade_adultos) + parseInt(quantidade_criancas);
 
-    console.log(bodyValues);
-    console.log(data_chegada);
-    console.log(data_saida);
-    console.log(num_pessoas);
-    console.log(padre);
-
-    if (!nome || !num_telefone || !email || !data_chegada || !data_saida || !num_pessoas) {
+    if (!name || !telefone || !email || !data_de_inicio || !data_de_fim || !num_pessoas) {
         return res.status(400).json({
             message: 'All fields are required'
         });
     }
 
     //check if data_chegada is before data_saida
-    if (data_chegada > data_saida) {
+    if (data_de_inicio > data_de_fim) {
         return res.status(400).json({
             message: 'Data de chegada deve ser antes da data de saída'
         });
@@ -51,7 +43,7 @@ export async function createRequest(req, res) {
     }
 
     // check if none of the fields are over 200 characters
-    if (nome.length > 200 || num_telefone.length > 20 || email.length > 200) {
+    if (name.length > 200 || telefone.length > 20 || email.length > 200) {
         return res.status(400).json({
             message: 'Fields must be less than 200 characters'
         });
@@ -59,11 +51,13 @@ export async function createRequest(req, res) {
 
     try {
         const result = await pool.query(
-            `INSERT INTO solicitacao (nome, num_telefone, email, data_chegada, data_saida, num_pessoas, nacionalidade, quantidade_adultos, quantidade_criancas, voce_e_padre)
+            `INSERT INTO solicitacao (nome, telefone, email, data_chegada, data_saida, num_pessoas, nacionalidade, quantidade_adultos, quantidade_criancas, voce_e_padre)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
              RETURNING *`,
-            [nome, num_telefone, email, data_chegada, data_saida, num_pessoas, nacionalidade, quantidade_adultos, quantidade_criancas, padre]
+            [name, telefone, email, data_de_inicio, data_de_fim, num_pessoas, nacionalidade, quantidade_adultos, quantidade_criancas, padre]
         );
+
+        console.log('inserido com sucesso:', result.rows[0]);
 
         return res.status(200).json({
             message: 'Request created successfully',
