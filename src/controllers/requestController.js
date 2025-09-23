@@ -1,14 +1,27 @@
 import pool from "../db.js";
 
 export async function createRequest(req, res) {
-    console.log('body:', req.body);
 
-    const { nome, telefone, nacionalidade, email, data_de_inicio, data_de_fim, quantidade_adultos, quantidade_criancas, voce_e_padre } = req.body;
+    const fields = req.body.fields;
 
-    const num_telefone = telefone;
+    const keyFields = Object.entries(fields);
+
+    const keyValueArray = keyFields.map(([key, field]) => [key,field.value]);
+
+    const bodyValues = Object.fromEntries(keyValueArray);
+
+    const { nome, num_telefone, email, data_de_inicio, data_de_fim, quantidade_adultos, quantidade_criancas, voce_e_padre } = bodyValues;
+
     const data_chegada = data_de_inicio;
     const data_saida = data_de_fim;
+    const padre = voce_e_padre ? true : false;
     const num_pessoas = quantidade_adultos + quantidade_criancas;
+
+    console.log(bodyValues);
+    console.log(data_chegada);
+    console.log(data_saida);
+    console.log(num_pessoas);
+    console.log(padre);
 
     if (!nome || !num_telefone || !email || !data_chegada || !data_saida || !num_pessoas) {
         return res.status(400).json({
@@ -49,7 +62,7 @@ export async function createRequest(req, res) {
             `INSERT INTO solicitacao (nome, num_telefone, email, data_chegada, data_saida, num_pessoas, nacionalidade, quantidade_adultos, quantidade_criancas, voce_e_padre)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
              RETURNING *`,
-            [nome, num_telefone, email, data_chegada, data_saida, num_pessoas, nacionalidade, quantidade_adultos, quantidade_criancas, voce_e_padre]
+            [nome, num_telefone, email, data_chegada, data_saida, num_pessoas, nacionalidade, quantidade_adultos, quantidade_criancas, padre]
         );
 
         return res.status(200).json({
