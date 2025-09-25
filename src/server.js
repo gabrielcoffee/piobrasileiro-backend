@@ -13,9 +13,6 @@ const PORT = process.env.PORT || 3003;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-
-app.use(cors());
-
 // Routes
 app.use('/user', userRoutes);
 app.use('/admin', adminRoutes);
