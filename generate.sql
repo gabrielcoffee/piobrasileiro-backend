@@ -50,7 +50,6 @@ CREATE TABLE solicitacao (
     criado_em TIMESTAMP DEFAULT now()
 );
 
-
 CREATE TABLE quarto (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     numero varchar(25) not null,

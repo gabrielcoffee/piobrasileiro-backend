@@ -5,7 +5,6 @@ import userRoutes from './routes/userRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import { createRequest } from './controllers/requestController.js';
 import './mailing/cron.js';
-import { SendReminderEmail } from './mailing/mailFunctions.js';
 
 const app = express();  
 const PORT = process.env.PORT || 3003;
@@ -15,8 +14,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 
-app.use(cors()); // REMOVER ANTES DE PRODUÇÃO
-
+app.use(cors());
 
 // Routes
 app.use('/user', userRoutes);
@@ -25,6 +23,7 @@ app.use('/auth', authRoutes);
 
 app.post(
     '/request',
+    cors({ origin: 'https://piobrasileiro.com'}),
     createRequest
 );
 

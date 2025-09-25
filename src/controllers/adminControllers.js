@@ -1102,10 +1102,14 @@ export async function getRequestNotifications(req, res) {
 export async function getRequests(req, res) {
     try {
         const result = await pool.query(`SELECT * FROM solicitacao ORDER BY criado_em DESC`);
+
+        const resultCount = await pool.query(`SELECT COUNT(*) FROM solicitacao WHERE visualizada = FALSE`);
+
         return res.status(200).json({ 
             message: result.rows.length > 0 ? 'Requests fetched successfully' : 'No requests found',
             data: {
-                requests: result.rows
+                requests: result.rows,
+                newRequestsCount: resultCount.rows[0].count
             }
         });
     } catch (error) {
@@ -1992,6 +1996,24 @@ export async function getReport(req, res) {
         console.error(error);
         return res.status(500).json({
             message: 'Failed to retrieve report'
+        });
+    }
+}
+
+export async function getNotifications(req, res) {
+    try {
+        const result = await pool.query(`SELECT * FROM notificacoes`);
+
+        return res.status(200).json({
+            message: 'Notifications fetched successfully',
+            data: result.rows
+        });
+    }
+
+    catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: 'Failed to fetch notifications'
         });
     }
 }
