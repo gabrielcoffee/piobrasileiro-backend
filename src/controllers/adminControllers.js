@@ -657,7 +657,8 @@ export async function getAccommodations(req, res) {
             JOIN hospede ho ON h.hospede_id = ho.id
             JOIN perfil p ON h.anfitriao_id = p.user_id
             JOIN quarto q ON h.quarto_id = q.id
-            WHERE (h.data_chegada >= $1 AND h.data_chegada <= $2) OR (h.data_saida >= $1 AND h.data_saida <= $2)
+            WHERE h.data_chegada <= $2
+            AND h.data_saida >= $1
             ORDER BY h.data_chegada ASC
             `;
 
