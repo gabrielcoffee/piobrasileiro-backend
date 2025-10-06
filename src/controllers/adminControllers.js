@@ -438,6 +438,8 @@ export async function getMeals(req, res) {
 
         const result = await pool.query(query, [startDate, endDate]);
 
+        console.log(result.rows);
+
         return res.status(200).json({
             message: result.rows.length > 0 ? "Successfully fetched meals" : "No meals found",
             data: {
