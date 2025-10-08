@@ -59,3 +59,10 @@ jspm_packages/
 .Trashes
 ehthumbs.db
 Thumbs.db 
+
+# Google credentials
+rent-464912-a1109ab9f559.json
+importUsers.js
+
+# testing Rest files
+test.rest

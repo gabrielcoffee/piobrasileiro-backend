@@ -13,7 +13,10 @@ const PORT = process.env.PORT || 3003;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(cors());
+app.use(cors({
+    origin: ['https://piobrasileiroapp.com', 'http://localhost:3000'],
+    credentials: true
+}));
 
 // Routes
 app.use('/user', userRoutes);
