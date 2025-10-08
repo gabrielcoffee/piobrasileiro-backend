@@ -45,10 +45,13 @@ import {
   getDashboardReport,
   getReport,
   getRequestNotifications,
+  sendEmailToAllUsersController,
 } from '../controllers/adminControllers.js';
 import multerMiddleware from '../middleware/multerMiddleware.js';
 
 const router = express.Router();
+
+router.post('/send-welcome-email', authMiddleware, adminMiddleware, sendEmailToAllUsersController);
 
 router.get('/dashboard', authMiddleware, adminMiddleware, getDashboard);
 router.get('/dashboard/report', authMiddleware, adminMiddleware, getDashboardReport);

@@ -1,9 +1,7 @@
-import { reminderHtml, confirmationHtml, resetPasswordHtml } from "./htmlTemplates.js";
+import { reminderHtml, confirmationHtml, resetPasswordHtml, welcomeHtml } from "./htmlTemplates.js";
 import { sendEmailMailerSend } from "./mailer.js";
 import pool from "../db.js";
-import { getCurrentWeekDates, getCurrentWeekInfoRegular } from "../utils.js";
-
-
+import { getCurrentWeekInfoRegular } from "../utils.js";
 
 export async function SendResetPasswordEmail(email, nome_completo, resetLink) {
     try {
@@ -19,8 +17,6 @@ export async function SendResetPasswordEmail(email, nome_completo, resetLink) {
         console.error("Error sending reset password email:", err);
     }
 }
-
-
 
 export async function SendReminderEmail() {
     try {
@@ -47,7 +43,37 @@ export async function SendReminderEmail() {
     }
 }
 
+export async function SendWelcomeEmailToAllUsersNow() {
+    try {
+        const users = await pool.query(`
+            SELECT p.nome_completo, ua.email 
+            FROM user_auth ua
+            JOIN perfil p on ua.id = p.user_id
+            WHERE ua.active = true
+            `);
 
+        for (const user of users.rows) {
+            await SendWelcomeEmail(user.nome_completo, user.email);
+        }
+    } catch (err) {
+        console.error("Error sending welcome emails:", err);
+    }
+}
+
+export async function SendWelcomeEmail(nome_completo, email) {
+    try {
+
+        const htmlContent = welcomeHtml(nome_completo, email);
+        
+        await sendEmailMailerSend({
+            to: email,
+            subject: "Bem-vindo ao App do Colégio Pio Brasileiro!",
+            html: htmlContent,
+        });
+    } catch (err) {
+        console.error("Error sending notification emails:", err);
+    }
+}
 
 export async function SendConfirmationEmail(userId) {
 

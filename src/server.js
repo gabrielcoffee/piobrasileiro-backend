@@ -5,6 +5,7 @@ import userRoutes from './routes/userRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import { createRequest } from './controllers/requestController.js';
 import './mailing/cron.js';
+import { SendWelcomeEmailToAllUsersNow } from './mailing/mailFunctions.js';
 
 const app = express();  
 const PORT = process.env.PORT || 3003;

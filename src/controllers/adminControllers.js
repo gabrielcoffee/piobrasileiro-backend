@@ -1,6 +1,7 @@
 import pool from '../db.js';
 import bcrypt from 'bcryptjs';
 import { getCurrentWeekDates, getListOfDatesFromCheckInToCheckOut } from '../utils.js';
+import { SendWelcomeEmail, SendWelcomeEmailToAllUsersNow } from '../mailing/mailFunctions.js';
 
 export async function createUserAndPerfil(req, res) {
     const {
@@ -74,6 +75,11 @@ export async function createUserAndPerfil(req, res) {
             );
 
             await client.query('COMMIT');
+
+            const nome_completo = perfilResult.rows[0].nome_completo;
+            const email = userResult.rows[0].email;
+
+            await SendWelcomeEmail(nome_completo, email);
 
             // Return complete user data
             return res.status(201).json({
@@ -2015,6 +2021,21 @@ export async function getNotifications(req, res) {
         console.error(error);
         return res.status(500).json({
             message: 'Failed to fetch notifications'
+        });
+    }
+}
+
+export async function sendEmailToAllUsersController(req, res) {
+
+    try {
+        await SendWelcomeEmailToAllUsersNow();
+        return res.status(200).json({
+            message: 'Welcome email sent to all users'
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: 'Failed to send welcome email to all users'
         });
     }
 }

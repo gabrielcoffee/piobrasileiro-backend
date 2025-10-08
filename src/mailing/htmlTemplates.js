@@ -78,6 +78,120 @@ const reminderHtml= (nome_completo) => {
     `; 
 }
 
+const welcomeHtml= (nome_completo, email) => {
+    return `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>PONTIFÍCIO COLÉGIO PIO BRASILEIRO</title>
+        </head>
+        <body style="font-family: 'Inter', sans-serif; margin: 0; padding: 0; background-color: #f0f0f0;">
+
+            <center>
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                    <tr>
+                        <td align="center" style="padding: 20px 0;">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 700px; border-radius: 16px; background-color: #f0f0f0;">
+
+                                <tr>
+                                    <td style="padding: 16px; text-align: center;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
+                                            <tr>
+                                                <td valign="middle" style="padding-right: 16px;">
+                                                    <img src="https://www.piobrasileiro.com/wp-content/uploads/2025/05/cropped-brasao-sem-fundo.png" width="50" alt="Logo colégio pio" style="display: block;">
+                                                    
+                                                </td>
+                                                <td valign="middle">
+                                                    <span style="font-family: 'Inter', sans-serif; font-weight: 400; font-size: 16px; color: #000000; white-space: nowrap;">PONTIFÍCIO COLÉGIO PIO BRASILEIRO</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td align="center" style="padding: 20px;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #fff; border-radius: 16px; padding: 48px; max-width: 650px;">
+                                            
+                                            <tr>
+                                                <td align="center">
+                                                    <h2 style="font-family: 'Inter', sans-serif; font-weight: 400; font-size: 24px; margin: 0 0 32px 0;">Olá, ${nome_completo.split(' ')[0]}!</h2>
+                                                    <div style="background-color: #EAFCE9; padding: 16px; border-radius: 50%; width: 34px; height: 34px; margin: 0 auto; display: block;">
+                                                        <img src="https://bucket.mailersendapp.com/z3m5jgr8emldpyo6/vz9dlemqe8q4kj50/images/a011282c-2e7a-4649-a9c2-6bb532ad5892.png" width="34" height="34" alt="Alarm Clock Icon" style="display: block;">
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            
+                                            <tr>
+                                                <td style="padding-top: 24px; text-align: center;">
+                                                    <p style="font-family: 'Inter', sans-serif; font-weight: 400; line-height: 1.5; font-size: 16px; margin: 0 0 24px 0;">Seja bem-vindo ao App do Colégio Pio Brasileiro!</p>
+                                                    <p style="font-family: 'Inter', sans-serif; font-weight: 400; line-height: 1.5; font-size: 16px; margin: 0 0 24px 0;">Você já pode acessar o aplicativo pelo link abaixo:</p>
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="">
+                                                    <p style="text-align: center; font-family: 'Inter', sans-serif; font-weight: 400; margin: 0;">
+                                                        <a href="https://piobrasileiroapp.com/" style="color: #267024; font-size: 16px; text-decoration: none; font-weight: 400;">PONTIFÍCIO COLÉGIO PIO BRASILEIRO</a>
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                            
+                                            <tr>
+                                                <td style="padding-top: 48px; text-align: center;">
+                                                    <p style="font-family: 'Inter', sans-serif; font-weight: 400; line-height: 1.5; font-size: 16px; margin: 0 0 24px 0;">Aqui estão suas credenciais de acesso:</p>
+                                                    <p style="font-family: 'Inter', sans-serif; font-weight: 400; line-height: 1.5; font-size: 16px; margin: 0 0 24px 0;"><strong>E-mail:</strong> ${email} <br><strong>Senha padrão:</strong> Senha@123</p>
+                                                </td>
+                                            </tr>
+                                            
+                                            <tr>
+                                                <td style="padding-top: 48px; text-align: center;">
+                                                    <p style="font-family: 'Inter', sans-serif; font-weight: 400; line-height: 1.5; font-size: 16px; margin: 0 0 24px 0;">Importante: ao acessar pela primeira vez, altere sua senha para uma pessoal e segura.</p>
+                                                    <p style="font-family: 'Inter', sans-serif; font-weight: 400; line-height: 1.5; font-size: 16px; margin: 0 0 24px 0;">Nesta fase inicial, o aplicativo está otimizado para uso em smartphones . A versão desktop está em aprimoramento e, em breve, oferecerá uma experiência mais fluida e responsiva.</p>
+                                                    
+                                                     <p style="font-family: 'Inter', sans-serif; font-weight: 400; line-height: 1.5; font-size: 16px; margin: 0 0 24px 0;">
+                                                    <strong>Dica: para facilitar o acesso, você pode adicionar o app à tela inicial do seu smartphone, tornando o acesso mais rápido e prático.</p></strong>
+                                                </td>
+                                            </tr>
+                                            
+                                            <tr>
+                                                <td style="padding-top: 24px; text-align: center;">
+                                                    <p style="font-family: 'Inter', sans-serif; font-weight: 400; line-height: 1.5; font-size: 16px; margin: 0 0 24px 0;">Como criar o atalho na tela inicial:</p>
+                                                    <p style="text-align: center; font-family: 'Inter', sans-serif; font-weight: 400; margin: 0;"><strong>Android:</strong>
+                                                        <a href="https://www.youtube.com/shorts/l6VQIke51F0" style="color: #267024; font-size: 16px; text-decoration: none; font-weight: 400;">Criar Atalho de Site no Celular</a>
+                                                    </p>
+                                                    
+                                                    <br>                                                        <p style="text-align: center; font-family: 'Inter', sans-serif; font-weight: 400; margin: 0;"><strong>iPhone:</strong>
+                                                        <a href="https://www.youtube.com/shorts/8X3L65NNsCk" style="color: #267024; font-size: 16px; text-decoration: none; font-weight: 400;">Salvar atalho do site na tela do iPhone.</a>
+                                                    </p>
+                                                </td>
+                                            </tr>                                    
+                                            <tr>
+                                                <td style="padding: 0 0 32px 0; border-bottom: 2px solid #F1F5F9;">
+
+                                                </td>
+                                            </tr>
+                                            
+                                            <tr>
+                                                <td style="padding-top: 24px;">
+                                                    <p style="font-family: 'Inter', sans-serif; font-weight: 400; line-height: 1.5; font-size: 16px; margin: 0;">Atenciosamente<br><strong style="font-weight: 700;">Pontifício Colégio Pio Brasileiro</strong></p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </center>
+        </body>
+        </html>
+    `; 
+}
+
 const confirmationHtml = (nome_completo, monday, mealsInfo) => {
 
     const formattedDays = [];
@@ -288,4 +402,4 @@ const resetPasswordHtml = (nome_completo, resetLink) => {
     `
 }
 
-export  { reminderHtml, confirmationHtml, resetPasswordHtml }
+export  { reminderHtml, confirmationHtml, resetPasswordHtml, welcomeHtml }
