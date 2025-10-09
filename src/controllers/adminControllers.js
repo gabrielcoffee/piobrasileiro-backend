@@ -74,21 +74,29 @@ export async function createUserAndPerfil(req, res) {
                 [userId, nome_completo, data_nasc, genero, funcao, num_documento, tipo_documento, observacoes]
             );
 
+            const usuarioNome = perfilResult.rows[0].nome_completo;
+            const usuarioEmail = userResult.rows[0].email;
+
+            let message = 'User and perfil created successfully';
+
+            try {
+                await SendWelcomeEmail(usuarioNome, usuarioEmail);
+            } catch (error) {
+                console.error("Error sending welcome email:", error);
+                message = 'User and perfil created successfully, but error sending welcome email';
+            }
+
             await client.query('COMMIT');
 
-            const nome_completo = perfilResult.rows[0].nome_completo;
-            const email = userResult.rows[0].email;
-
-            await SendWelcomeEmail(nome_completo, email);
-
-            // Return complete user data
             return res.status(201).json({
-                message: 'User and perfil created successfully',
+                message: message,
                 data: {
                     user: userResult.rows[0],
                     perfil: perfilResult.rows[0]
                 }
             });
+
+            
 
         } catch (error) {
             await client.query('ROLLBACK');
