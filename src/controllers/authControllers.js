@@ -77,14 +77,17 @@ export async function LoginUser(req, res) {
 export async function emailForgotPassword(req, res) {
     const { email } = req.body;
 
-    if (!email) {
+    // Trim string fields
+    const trimmedEmail = email?.trim();
+
+    if (!trimmedEmail) {
         return res.status(400).json({
             message: 'Email is required'
         })
     }
 
     try {
-        const result = await pool.query(`SELECT * FROM user_auth WHERE email = $1`, [email]);
+        const result = await pool.query(`SELECT * FROM user_auth WHERE email = $1`, [trimmedEmail]);
 
         if (result.rows.length === 0) {
             return res.status(404).json({
@@ -108,11 +111,14 @@ export async function emailForgotPassword(req, res) {
 export async function forgotPassword(req, res) {
     const { email } = req.body;
 
+    // Trim string fields
+    const trimmedEmail = email?.trim();
+
     const userResult = await pool.query(`
         SELECT ua.id, ua.email, p.nome_completo FROM user_auth ua
         JOIN perfil p ON ua.id = p.user_id
         WHERE LOWER(ua.email) = LOWER($1)`,
-        [email]);
+        [trimmedEmail]);
     const user = userResult.rows[0] || null;
 
     if (!user) {    
@@ -141,12 +147,16 @@ export async function forgotPassword(req, res) {
 export async function resetPassword(req, res) {
     const { token, newPassword } = req.body;
 
+    // Trim string fields
+    const trimmedToken = token?.trim();
+    const trimmedNewPassword = newPassword?.trim();
+
     const client = await pool.connect();
 
     try {
         await client.query('BEGIN');
 
-        if (!token || !newPassword) {
+        if (!trimmedToken || !trimmedNewPassword) {
             await client.query('ROLLBACK');
             return res.status(400).json({
                 message: 'Token and new password are required'
@@ -157,14 +167,14 @@ export async function resetPassword(req, res) {
             SELECT user_id FROM password_reset
             WHERE token_hash = $1
             AND expires_at > NOW()
-        `, [token]);
+        `, [trimmedToken]);
 
         if (userResult.rows.length === 0) {
             await client.query('ROLLBACK');
             return res.status(200).send("Invalid token");
         }
         
-        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+        const hashedNewPassword = await bcrypt.hash(trimmedNewPassword, 10);
 
         const changeResult = await pool.query(`
             UPDATE user_auth
@@ -181,7 +191,7 @@ export async function resetPassword(req, res) {
         const deleteToken = await pool.query(`
             DELETE FROM password_reset
             WHERE token_hash = $1
-        `, [token]);
+        `, [trimmedToken]);
 
         if (deleteToken.rowCount === 0) {
             await client.query('ROLLBACK');

@@ -12,10 +12,16 @@ export async function createRequest(req, res) {
 
     const { name, telefone, nacionalidade, email, data_de_inicio, data_de_fim, quantidade_adultos, quantidade_criancas, voce_e_padre } = bodyValues;
 
+    // Trim string fields
+    const trimmedName = name?.trim();
+    const trimmedTelefone = telefone?.trim();
+    const trimmedNacionalidade = nacionalidade?.trim();
+    const trimmedEmail = email?.trim();
+
     const padre = voce_e_padre ? true : false;
     const num_pessoas = parseInt(quantidade_adultos) + parseInt(quantidade_criancas);
 
-    if (!name || !telefone || !email || !data_de_inicio || !data_de_fim || !num_pessoas) {
+    if (!trimmedName || !trimmedTelefone || !trimmedEmail || !data_de_inicio || !data_de_fim || !num_pessoas) {
         return res.status(400).json({
             message: 'All fields are required'
         });
@@ -36,14 +42,14 @@ export async function createRequest(req, res) {
     }
 
     // check if email is valid
-    if (!email.includes('@')) {
+    if (!trimmedEmail.includes('@')) {
         return res.status(400).json({
             message: 'Email inválido'
         });
     }
 
     // check if none of the fields are over 200 characters
-    if (name.length > 200 || telefone.length > 20 || email.length > 200) {
+    if (trimmedName.length > 200 || trimmedTelefone.length > 20 || trimmedEmail.length > 200) {
         return res.status(400).json({
             message: 'Fields must be less than 200 characters'
         });
@@ -54,7 +60,7 @@ export async function createRequest(req, res) {
             `INSERT INTO solicitacao (nome, telefone, email, data_chegada, data_saida, num_pessoas, nacionalidade, quantidade_adultos, quantidade_criancas, voce_e_padre)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
              RETURNING *`,
-            [name, telefone, email, data_de_inicio, data_de_fim, num_pessoas, nacionalidade, quantidade_adultos, quantidade_criancas, padre]
+            [trimmedName, trimmedTelefone, trimmedEmail, data_de_inicio, data_de_fim, num_pessoas, trimmedNacionalidade, quantidade_adultos, quantidade_criancas, padre]
         );
 
         console.log('inserido com sucesso:', result.rows[0]);

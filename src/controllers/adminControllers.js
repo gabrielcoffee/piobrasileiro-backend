@@ -19,8 +19,18 @@ export async function createUserAndPerfil(req, res) {
         observacoes
     } = req.body;
 
+    // Trim string fields
+    const trimmedEmail = email?.trim();
+    const trimmedTipoUsuario = tipo_usuario?.trim();
+    const trimmedNomeCompleto = nome_completo?.trim();
+    const trimmedGenero = genero?.trim();
+    const trimmedFuncao = funcao?.trim();
+    const trimmedNumDocumento = num_documento?.trim();
+    const trimmedTipoDocumento = tipo_documento?.trim();
+    const trimmedObservacoes = observacoes?.trim();
+
     // Validation
-    if (!email || !nome_completo) {
+    if (!trimmedEmail || !trimmedNomeCompleto) {
         return res.status(400).json({
             message: 'Email, password and nome_completo are required'
         });
@@ -38,7 +48,7 @@ export async function createUserAndPerfil(req, res) {
         // Check if user already exists
         const existingUser = await pool.query(
             'SELECT * FROM user_auth WHERE email = $1',
-            [email]
+            [trimmedEmail]
         );
 
         if (existingUser.rows.length > 0) {
@@ -62,7 +72,7 @@ export async function createUserAndPerfil(req, res) {
             const userResult = await client.query(
                 `INSERT INTO user_auth (email, password, tipo_usuario) 
                  VALUES ($1, $2, $3) RETURNING *`,
-                [email, hashedPassword, tipo_usuario || 'comum']
+                [trimmedEmail, hashedPassword, trimmedTipoUsuario || 'comum']
             );
 
             const userId = userResult.rows[0].id;
@@ -71,7 +81,7 @@ export async function createUserAndPerfil(req, res) {
             const perfilResult = await client.query(
                 `INSERT INTO perfil (user_id, nome_completo, data_nasc, genero, funcao, num_documento, tipo_documento, observacoes) 
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-                [userId, nome_completo, data_nasc, genero, funcao, num_documento, tipo_documento, observacoes]
+                [userId, trimmedNomeCompleto, data_nasc, trimmedGenero, trimmedFuncao, trimmedNumDocumento, trimmedTipoDocumento, trimmedObservacoes]
             );
 
             const usuarioNome = perfilResult.rows[0].nome_completo;
@@ -502,7 +512,11 @@ export async function createMeal(req, res) {
         observacoes,
     } = req.body;
 
-    if (!tipo_pessoa || !data) {
+    // Trim string fields
+    const trimmedTipoPessoa = tipo_pessoa?.trim();
+    const trimmedObservacoes = observacoes?.trim();
+
+    if (!trimmedTipoPessoa || !data) {
         return res.status(400).json({ 
             message: 'tipo_pessoa and data are required' 
         });
@@ -525,7 +539,7 @@ export async function createMeal(req, res) {
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             RETURNING *`,
             [
-                tipo_pessoa,
+                trimmedTipoPessoa,
                 usuario_id || null,
                 hospede_id || null,
                 convidado_id || null,
@@ -533,7 +547,7 @@ export async function createMeal(req, res) {
                 Boolean(almoco_colegio),
                 Boolean(almoco_levar),
                 Boolean(janta_colegio),
-                observacoes || null,
+                trimmedObservacoes || null,
             ]
         );
 
@@ -718,6 +732,9 @@ export async function getAccommodation(req, res) {
 export async function createAccommodation(req, res) {
     const { anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, janta, observacoes } = req.body;
 
+    // Trim string fields
+    const trimmedObservacoes = observacoes?.trim();
+
     if (!anfitriao_id || !hospede_id || !data_chegada || !data_saida || !quarto_id) {
         return res.status(400).json({ 
             message: 'anfitriao_id, hospede_id, data_chegada, data_saida and quarto_id are required' 
@@ -746,7 +763,7 @@ export async function createAccommodation(req, res) {
             `UPDATE hospede 
             SET observacoes = $1
             WHERE id = $2`,
-            [observacoes, hospede_id]
+            [trimmedObservacoes, hospede_id]
         )
 
         if (observacoesResult.rowCount === 0) {
@@ -984,12 +1001,15 @@ export async function getGuests(req, res) {
 
 export async function createQuickGuest(req, res) {
     const { nome } = req.body;
+
+    const trimmedNome = nome.trim();
+
     try {
         const result = await pool.query(
             `INSERT INTO hospede (nome)
              VALUES ($1)
              RETURNING *`,
-            [nome]
+            [trimmedNome]
         );
 
         return res.status(201).json({
@@ -1008,7 +1028,16 @@ export async function createQuickGuest(req, res) {
 export async function createGuest(req, res) {
     const { nome, genero, tipo_documento, num_documento, funcao, origem, observacoes } = req.body;
 
-    if (!nome || !genero || !tipo_documento || !num_documento) {
+    // Trim string fields
+    const trimmedNome = nome?.trim();
+    const trimmedGenero = genero?.trim();
+    const trimmedTipoDocumento = tipo_documento?.trim();
+    const trimmedNumDocumento = num_documento?.trim();
+    const trimmedFuncao = funcao?.trim();
+    const trimmedOrigem = origem?.trim();
+    const trimmedObservacoes = observacoes?.trim();
+
+    if (!trimmedNome || !trimmedGenero || !trimmedTipoDocumento || !trimmedNumDocumento) {
         return res.status(400).json({ 
             message: 'nome, genero, tipo_documento and num_documento are required' 
         });
@@ -1019,7 +1048,7 @@ export async function createGuest(req, res) {
             `INSERT INTO hospede (nome, genero, tipo_documento, num_documento, funcao, origem, observacoes)
              VALUES ($1, $2, $3, $4, $5, $6, $7)
              RETURNING *`,
-            [nome, genero, tipo_documento, num_documento, funcao || '', origem || '', observacoes || '']
+            [trimmedNome, trimmedGenero, trimmedTipoDocumento, trimmedNumDocumento, trimmedFuncao || '', trimmedOrigem || '', trimmedObservacoes || '']
         );
 
         return res.status(201).json({ 
@@ -1241,6 +1270,12 @@ export async function updateProfile(req, res) {
 export async function createGuestMeal(req, res) {
     const { anfitriao_id, observacoes, data, nome, funcao, origem, almoco_colegio, almoco_levar, janta_colegio} = req.body;
 
+    // Trim string fields
+    const trimmedObservacoes = observacoes?.trim();
+    const trimmedNome = nome?.trim();
+    const trimmedFuncao = funcao?.trim();
+    const trimmedOrigem = origem?.trim();
+
     try {
         const anfitriao = anfitriao_id ? anfitriao_id : req.userId;
 
@@ -1253,7 +1288,7 @@ export async function createGuestMeal(req, res) {
 
         const convidadoResult = await pool.query(
             convidadoQuery,
-            [anfitriao, nome, funcao, origem, observacoes]
+            [anfitriao, trimmedNome, trimmedFuncao, trimmedOrigem, trimmedObservacoes]
         );
 
 
@@ -1568,13 +1603,16 @@ export async function updateRoom(req, res) {
 export async function createRoom(req, res) {
     const { numero, capacidade, active } = req.body;
 
+    // Trim string fields
+    const trimmedNumero = numero?.trim();
+
     try {
         const result = await pool.query(
             `
             INSERT INTO quarto (numero, capacidade, active)
             VALUES ($1, $2, $3)
             RETURNING *`,
-            [numero, capacidade, active]
+            [trimmedNumero, capacidade, active]
         );
 
         return res.status(201).json({

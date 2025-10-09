@@ -32,6 +32,9 @@ export async function updatePerfilName(req, res) {
     const userId = req.userId;
     const { nome_completo } = req.body;
 
+    // Trim string fields
+    const trimmedNomeCompleto = nome_completo?.trim();
+
     try {
         const query = `
             UPDATE perfil
@@ -40,7 +43,7 @@ export async function updatePerfilName(req, res) {
             RETURNING nome_completo
         `
 
-        const result = await pool.query(query, [nome_completo, userId]);
+        const result = await pool.query(query, [trimmedNomeCompleto, userId]);
 
         if (result.rows.length === 0) {
             return res.status(404).json({
@@ -215,6 +218,10 @@ export async function createMeal(req, res) {
     const userId = req.userId;
     const { tipo_pessoa, data, almoco_colegio, almoco_levar, janta_colegio, observacoes } = req.body;
 
+    // Trim string fields
+    const trimmedTipoPessoa = tipo_pessoa?.trim();
+    const trimmedObservacoes = observacoes?.trim();
+
     try {
         const query = `
             INSERT INTO refeicao (tipo_pessoa, usuario_id, data, almoco_colegio, almoco_levar, janta_colegio, observacoes)
@@ -224,7 +231,7 @@ export async function createMeal(req, res) {
 
         const result = await pool.query(
             query, 
-            [tipo_pessoa, userId, data, almoco_colegio, almoco_levar, janta_colegio, observacoes]
+            [trimmedTipoPessoa, userId, data, almoco_colegio, almoco_levar, janta_colegio, trimmedObservacoes]
         );
 
         if (result.rows.length === 0) {
@@ -369,6 +376,11 @@ export async function createGuestMeal(req, res) {
     const userId = req.userId;
     const { data, nome, funcao, origem } = req.body;
 
+    // Trim string fields
+    const trimmedNome = nome?.trim();
+    const trimmedFuncao = funcao?.trim();
+    const trimmedOrigem = origem?.trim();
+
     try {
         // First, create the convidado
         const convidadoQuery = `
@@ -379,7 +391,7 @@ export async function createGuestMeal(req, res) {
 
         const convidadoResult = await pool.query(
             convidadoQuery,
-            [userId, nome, funcao, origem]
+            [userId, trimmedNome, trimmedFuncao, trimmedOrigem]
         );
 
 
@@ -518,8 +530,11 @@ export async function getGuests(req, res) {
 export async function emailForgotPassword(req, res) {
     const { email } = req.body;
 
+    // Trim string fields
+    const trimmedEmail = email?.trim();
+
     try {
-        const result = await pool.query(`SELECT * FROM user_auth WHERE email = $1`, [email]);
+        const result = await pool.query(`SELECT * FROM user_auth WHERE email = $1`, [trimmedEmail]);
 
         if (result.rows.length === 0) {
             return res.status(400).json({
