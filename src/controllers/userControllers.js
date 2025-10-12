@@ -1,6 +1,6 @@
 import pool from '../db.js';
 import { SendConfirmationEmail } from '../mailing/mailFunctions.js';
-import { isPasswordValid, getCurrentWeekDates, sqlValuesString, getCurrentWeekInfoRegular } from '../utils.js';
+import { isPasswordValid, sqlValuesString, getCurrentWeekInfoRegular } from '../utils.js';
 import bcrypt from 'bcryptjs';
 
 export async function getCommonPerfil(req, res) {
@@ -67,14 +67,6 @@ export async function updatePerfilName(req, res) {
 
 }
 
-/*
-router.put('/perfil/senha', authMiddleware, updateUserPassword);
-
-router.get('/weekmeals', authMiddleware, getWeekMeals);
-router.post('/refeicao',  authMiddleware, createRefeicao);
-router.put('/refeicao/:id', authMiddleware, updateRefeicao);
-*/
-
 export async function updateUserPassword(req, res) {
 
     const userId = req.userId;
@@ -109,7 +101,8 @@ export async function updateUserPassword(req, res) {
         const validPassword = await bcrypt.compare(oldPassword, savedHashedPassword);
         if (!validPassword) {
             return res.status(401).json({
-                message: 'Wrong old password'
+                message: 'Wrong old password',
+                error: 'Wrong old password'
             })
         }
 
@@ -305,7 +298,11 @@ export async function upsertMeals(req, res) {
 
         const result = await pool.query(query, flatValues);
 
-        await SendConfirmationEmail(userId);
+        try {
+            await SendConfirmationEmail(userId);
+        } catch (error) {
+            console.error("Could not send confirmation email", error);
+        }
 
         return res.status(200).json({
             message: "Meals created successfully",
@@ -323,7 +320,7 @@ export async function upsertMeals(req, res) {
 
 export async function getGuestMeals(req, res) {
     const userId = req.userId;
-    const { monday, sunday } = getCurrentWeekDates();
+    const { monday, sunday } = getCurrentWeekInfoRegular();
 
     try {
         const convidadoResult = await pool.query(

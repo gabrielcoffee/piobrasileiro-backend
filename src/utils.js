@@ -1,21 +1,6 @@
 import pool from "./db.js";
 import crypto from "crypto";
 
-export function getCurrentWeekDates() {
-    const today = new Date();
-    const dayOfWeek = today.getDay();
-    
-    const daysToMonday = dayOfWeek === 0 ? -6 : -(dayOfWeek - 1);
-    
-    const monday = new Date(today);
-    monday.setDate(today.getDate() + daysToMonday);
-    
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    
-    return { monday, sunday };
-}
-
 // Gets the current week dates but from sunday to next sunday
 export function getCurrentWeekInfoRegular() {
     const now = new Date();
@@ -104,7 +89,7 @@ export async function getUserLoginData(userId) {
     const profileResult = await pool.query(profileQuery, [userId]);
     
     // Get meals for current week
-    const { monday, sunday } = getCurrentWeekDates();
+    const { monday, sunday } = getCurrentWeekInfoRegular();
     const mealsQuery = `
         SELECT * FROM refeicao 
         WHERE usuario_id = $1 
