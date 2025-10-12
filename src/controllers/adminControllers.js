@@ -1,6 +1,6 @@
 import pool from '../db.js';
 import bcrypt from 'bcryptjs';
-import { getListOfDatesFromCheckInToCheckOut } from '../utils.js';
+import { getCurrentWeekDates, getListOfDatesFromCheckInToCheckOut } from '../utils.js';
 import { SendWelcomeEmail, SendWelcomeEmailToAllUsersNow } from '../mailing/mailFunctions.js';
 
 export async function createUserAndPerfil(req, res) {
@@ -1667,7 +1667,7 @@ export async function getRoomOccupation(req, res) {
 
 export async function getDashboard(req, res) {
     try {
-        const { monday, sunday } = getCurrentWeekInfoRegular();
+        const { monday, sunday } = getCurrentWeekDates();
 
         // Query 1: Get all days of the week
         const daysResult = await pool.query(`
@@ -1790,7 +1790,7 @@ export async function getDashboard(req, res) {
 
 export async function getDashboardReport(req, res) {
 
-    const { monday, sunday } = getCurrentWeekInfoRegular();
+    const { monday, sunday } = getCurrentWeekDates();
 
     try {
 
