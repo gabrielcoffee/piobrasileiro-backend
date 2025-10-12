@@ -1,6 +1,6 @@
 import pool from '../db.js';
 import { SendConfirmationEmail } from '../mailing/mailFunctions.js';
-import { isPasswordValid, sqlValuesString, getCurrentWeekInfoRegular } from '../utils.js';
+import { isPasswordValid, getCurrentWeekInfoRegular, sqlValuesString } from '../utils.js';
 import bcrypt from 'bcryptjs';
 
 export async function getCommonPerfil(req, res) {
