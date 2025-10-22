@@ -5,7 +5,7 @@ import { generateResetToken } from '../utils.js';
 import { SendResetPasswordEmail } from '../mailing/mailFunctions.js';
 
 export async function LoginUser(req, res) {
-    const { email, password } = req.body;
+    const { email, password, remember_me } = req.body;
 
     console.log(email, password);
 
@@ -40,7 +40,7 @@ export async function LoginUser(req, res) {
         const token = jwt.sign(
             { id: userId, role: userRole },
             process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRES_IN }
+            { expiresIn: remember_me ? '30d' : process.env.JWT_EXPIRES_IN }
         );
 
         // Base user data
