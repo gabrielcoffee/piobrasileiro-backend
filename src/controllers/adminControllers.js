@@ -1031,15 +1031,16 @@ export async function createGuest(req, res) {
     // Trim string fields
     const trimmedNome = nome?.trim();
     const trimmedGenero = genero?.trim();
-    const trimmedTipoDocumento = tipo_documento?.trim();
-    const trimmedNumDocumento = num_documento?.trim();
-    const trimmedFuncao = funcao?.trim();
-    const trimmedOrigem = origem?.trim();
-    const trimmedObservacoes = observacoes?.trim();
 
-    if (!trimmedNome || !trimmedGenero || !trimmedTipoDocumento || !trimmedNumDocumento) {
+    const trimmedTipoDocumento = tipo_documento ? tipo_documento?.trim() : null;
+    const trimmedNumDocumento = num_documento ? num_documento?.trim() : null;
+    const trimmedFuncao = funcao ? funcao?.trim() : null;
+    const trimmedOrigem = origem ? origem?.trim() : null;
+    const trimmedObservacoes = observacoes ? observacoes?.trim() : null;
+
+    if (!trimmedNome || !trimmedGenero) {
         return res.status(400).json({ 
-            message: 'nome, genero, tipo_documento and num_documento are required' 
+            message: 'nome and genero are required' 
         });
     }
 
@@ -1798,7 +1799,7 @@ export async function getDashboardReport(req, res) {
         const mealsResult = await pool.query(`
             SELECT 
                 data,
-                COUNT(CASE WHEN almoco_colegio = true THEN 1 END) as almoco_colegio_count,
+                COUNT(CASE WHEN almoco_colegio = true AND almoco_levar = false THEN 1 END) as almoco_colegio_count,
                 COUNT(CASE WHEN almoco_levar = true THEN 1 END) as almoco_levar_count,
                 COUNT(CASE WHEN (almoco_colegio = true OR almoco_levar = true) THEN 1 END) as total_almoco,
                 COUNT(CASE WHEN janta_colegio = true THEN 1 END) as total_janta
@@ -1931,7 +1932,7 @@ export async function getReport(req, res) {
         const mealsResult = await pool.query(`
             SELECT 
                 data,
-                COUNT(CASE WHEN almoco_colegio = true THEN 1 END) as almoco_colegio_count,
+                COUNT(CASE WHEN almoco_colegio = true AND almoco_levar = false THEN 1 END) as almoco_colegio_count,
                 COUNT(CASE WHEN almoco_levar = true THEN 1 END) as almoco_levar_count,
                 COUNT(CASE WHEN (almoco_colegio = true OR almoco_levar = true) THEN 1 END) as total_almoco,
                 COUNT(CASE WHEN janta_colegio = true THEN 1 END) as total_janta
