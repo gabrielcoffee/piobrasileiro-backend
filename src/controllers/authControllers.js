@@ -7,8 +7,6 @@ import { SendResetPasswordEmail } from '../mailing/mailFunctions.js';
 export async function LoginUser(req, res) {
     const { email, password, remember_me } = req.body;
 
-    console.log(email, password);
-
     if (!email || !password) {
         return res.status(400).json({
             message: 'Email and password are required'
@@ -20,7 +18,8 @@ export async function LoginUser(req, res) {
         const result = await pool.query(`SELECT * FROM user_auth WHERE email = $1 AND active = true`, [email])
         if (result.rows.length === 0) {
             return res.status(401).json({
-                message: 'No user found with this email or user is inactive'
+                message: 'No user found with this email or user is inactive',
+                error: 'email_error'
             })
         }
 
@@ -29,7 +28,8 @@ export async function LoginUser(req, res) {
         const isPasswordValid = await bcrypt.compare(password, savedHashedPassword);
         if (!isPasswordValid) {
             return res.status(401).json({
-                message: 'Invalid password'
+                message: 'Invalid password',
+                error: 'password_error'
             })
         }
 
