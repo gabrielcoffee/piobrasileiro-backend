@@ -93,7 +93,7 @@ router.delete('/accommodations/:accommodationId', authMiddleware, adminMiddlewar
 // CRUD for quarto
 router.post('/rooms', authMiddleware, adminMiddleware, getRooms);
 router.get('/rooms/all', authMiddleware, adminMiddleware, getAllRooms);
-router.post('/rooms', authMiddleware, adminMiddleware, createRoom);
+router.post('/rooms/create', authMiddleware, adminMiddleware, createRoom);
 router.put('/rooms/:roomId', authMiddleware, adminMiddleware, updateRoom);
 router.put('/rooms/toggle-active/:roomId', authMiddleware, adminMiddleware, toggleActiveRoom);
 router.get('/room-occupation', authMiddleware, adminMiddleware, getRoomOccupation);
