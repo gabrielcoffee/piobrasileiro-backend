@@ -89,7 +89,9 @@ CREATE TABLE hospedagem (
         REFERENCES quarto ON DELETE CASCADE,
     criado_em    timestamp DEFAULT now(),
     almoco       boolean   DEFAULT false,
-    janta        boolean   DEFAULT false
+    janta        boolean   DEFAULT false,
+    cafe         boolean   DEFAULT false,
+    forma_pagamento forma_pagamento_enum
 );
 
 CREATE TABLE convidado (

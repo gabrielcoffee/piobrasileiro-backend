@@ -148,13 +148,13 @@ export function generateResetToken() {
 //   almoco, janta, observacoes });
 export async function createHospedagemForHospede(client, {
     anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id,
-    almoco, janta, observacoes,
+    almoco, janta, observacoes, cafe, forma_pagamento,
 }) {
     const hospResult = await client.query(
-        `INSERT INTO hospedagem (anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, janta)
-         VALUES ($1, $2, $3, $4, $5, COALESCE($6, false), COALESCE($7, false))
+        `INSERT INTO hospedagem (anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, janta, cafe, forma_pagamento)
+         VALUES ($1, $2, $3, $4, $5, COALESCE($6, false), COALESCE($7, false), COALESCE($8, false), $9)
          RETURNING *`,
-        [anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, janta]
+        [anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, janta, cafe, forma_pagamento || null]
     );
     if (hospResult.rows.length === 0) {
         throw new Error('Failed to create hospedagem');

@@ -730,7 +730,7 @@ export async function getAccommodation(req, res) {
 }
 
 export async function createAccommodation(req, res) {
-    const { anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, janta, observacoes } = req.body;
+    const { anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, janta, observacoes, cafe, forma_pagamento } = req.body;
 
     // Trim string fields
     const trimmedObservacoes = observacoes?.trim();
@@ -748,7 +748,7 @@ export async function createAccommodation(req, res) {
 
         const hospedagem = await createHospedagemForHospede(client, {
             anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id,
-            almoco, janta, observacoes: trimmedObservacoes,
+            almoco, janta, observacoes: trimmedObservacoes, cafe, forma_pagamento,
         });
 
         await client.query('COMMIT');
@@ -2089,7 +2089,7 @@ export async function getPreReserva(req, res) {
 // hospedes (opcional) sobrescreve o jsonb salvo (edições do admin na tela).
 export async function validatePreReserva(req, res) {
     const { id } = req.params;
-    const { quarto_id, anfitriao_id, almoco, janta, hospedes } = req.body;
+    const { quarto_id, anfitriao_id, almoco, janta, hospedes, cafe, forma_pagamento } = req.body;
 
     if (!quarto_id || !anfitriao_id) {
         return res.status(400).json({ message: 'quarto_id e anfitriao_id são obrigatórios' });
@@ -2120,6 +2120,17 @@ export async function validatePreReserva(req, res) {
             return res.status(400).json({ message: 'Nenhum hóspede para validar' });
         }
 
+        // Junta restrição + observação do Forms num único texto (hospede.observacoes).
+        const r = preReserva.restricao_alimentar?.trim();
+        const o = preReserva.observacao?.trim();
+        const obsCombinada = [r, o].filter(Boolean).join('\n') || null;
+
+        // Café = indicado nas preferências do Forms (todas menos 'decidir_depois').
+        const cafeFinal = typeof cafe === 'boolean'
+            ? cafe
+            : ['apenas_cafe', 'cafe_almoco', 'cafe_janta', 'cafe_almoco_janta'].includes(preReserva.refeicoes);
+        const pagamentoFinal = forma_pagamento || preReserva.forma_pagamento || null;
+
         const criadas = [];
         for (const h of lista) {
             const nome = String(h?.nome ?? '').trim().slice(0, 100);
@@ -2128,7 +2139,7 @@ export async function validatePreReserva(req, res) {
 
             const hospedeResult = await client.query(
                 `INSERT INTO hospede (nome, idade, observacoes) VALUES ($1, $2, $3) RETURNING id`,
-                [nome, idade, preReserva.restricao_alimentar]
+                [nome, idade, obsCombinada]
             );
             const hospede_id = hospedeResult.rows[0].id;
 
@@ -2140,7 +2151,9 @@ export async function validatePreReserva(req, res) {
                 quarto_id,
                 almoco,
                 janta,
-                observacoes: preReserva.restricao_alimentar,
+                observacoes: obsCombinada,
+                cafe: cafeFinal,
+                forma_pagamento: pagamentoFinal,
             });
             criadas.push(hosp);
         }
@@ -2185,9 +2198,11 @@ export async function deletePreReserva(req, res) {
 }
 
 // Criação manual de reserva em grupo (sem pré-reserva de origem).
-// body: { anfitriao_id, quarto_id, data_chegada, data_saida, almoco, janta, hospedes:[{nome,idade}] }
+// body: { anfitriao_id, quarto_id, data_chegada, data_saida, almoco, janta,
+//         hospedes:[{nome,idade}], observacoes?, cafe?, forma_pagamento? }
 export async function createAccommodationGroup(req, res) {
-    const { anfitriao_id, quarto_id, data_chegada, data_saida, almoco, janta, hospedes } = req.body;
+    const { anfitriao_id, quarto_id, data_chegada, data_saida, almoco, janta, hospedes, observacoes, cafe, forma_pagamento } = req.body;
+    const obsGrupo = observacoes?.trim() || null;
 
     if (!anfitriao_id || !quarto_id || !data_chegada || !data_saida) {
         return res.status(400).json({ message: 'anfitriao_id, quarto_id, data_chegada, data_saida são obrigatórios' });
@@ -2210,8 +2225,8 @@ export async function createAccommodationGroup(req, res) {
             const idade = Number.isInteger(h?.idade) ? h.idade : null;
 
             const hospedeResult = await client.query(
-                `INSERT INTO hospede (nome, idade) VALUES ($1, $2) RETURNING id`,
-                [nome, idade]
+                `INSERT INTO hospede (nome, idade, observacoes) VALUES ($1, $2, $3) RETURNING id`,
+                [nome, idade, obsGrupo]
             );
             const hosp = await createHospedagemForHospede(client, {
                 anfitriao_id,
@@ -2221,7 +2236,9 @@ export async function createAccommodationGroup(req, res) {
                 quarto_id,
                 almoco,
                 janta,
-                observacoes: null,
+                observacoes: obsGrupo,
+                cafe,
+                forma_pagamento,
             });
             criadas.push(hosp);
         }
