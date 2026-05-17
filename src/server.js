@@ -4,6 +4,8 @@ import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import { createRequest } from './controllers/requestController.js';
+import { createPreReserva } from './controllers/formsController.js';
+import formsSecretMiddleware from './middleware/formsSecretMiddleware.js';
 import './mailing/cron.js';
 import { SendWelcomeEmailToAllUsersNow } from './mailing/mailFunctions.js';
 
@@ -28,6 +30,15 @@ app.post(
     '/request',
     cors({ origin: 'https://piobrasileiro.com'}),
     createRequest
+);
+
+// Public ingestion from Google Forms (Apps Script onFormSubmit).
+// Server-side request, no browser Origin; secret header is the real gate.
+app.post(
+    '/forms/hospedagem',
+    cors(),
+    formsSecretMiddleware,
+    createPreReserva
 );
 
 app.listen(PORT, () => {

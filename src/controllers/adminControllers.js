@@ -1,6 +1,6 @@
 import pool from '../db.js';
 import bcrypt from 'bcryptjs';
-import { getCurrentWeekDates, getListOfDatesFromCheckInToCheckOut } from '../utils.js';
+import { getCurrentWeekDates, getListOfDatesFromCheckInToCheckOut, createHospedagemForHospede } from '../utils.js';
 import { SendWelcomeEmail, SendWelcomeEmailToAllUsersNow } from '../mailing/mailFunctions.js';
 
 export async function createUserAndPerfil(req, res) {
@@ -746,63 +746,22 @@ export async function createAccommodation(req, res) {
     try {
         await client.query('BEGIN');
 
-        const result = await client.query(
-            `INSERT INTO hospedagem (anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, janta)
-             VALUES ($1, $2, $3, $4, $5, COALESCE($6, false), COALESCE($7, false))
-             RETURNING *`,
-            [anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, janta]
-        );
-
-        if (result.rows.length === 0) {
-            await client.query('ROLLBACK');
-            return res.status(404).json({ message: 'Failed to create accommodation' 
-            });
-        }
-
-        const observacoesResult = await client.query(
-            `UPDATE hospede 
-            SET observacoes = $1
-            WHERE id = $2`,
-            [trimmedObservacoes, hospede_id]
-        )
-
-        if (observacoesResult.rowCount === 0) {
-            await client.query('ROLLBACK');
-            return res.status(404).json({ message: 'Failed to update guest' 
-            });
-        }
-
-        const dates = getListOfDatesFromCheckInToCheckOut(data_chegada, data_saida);
-
-        const mealResult = await client.query(
-            `INSERT INTO refeicao (tipo_pessoa, hospede_id, data, almoco_colegio, janta_colegio)
-             SELECT 
-                 'hospede' as tipo_pessoa,
-                 $1 as hospede_id,
-                 date_value as data,
-                 $3 as almoco_colegio,
-                 $4 as janta_colegio
-             FROM unnest($2::date[]) as date_value
-             RETURNING *`,
-            [hospede_id, dates, almoco, janta]
-        );
-
-        if (mealResult.rowCount === 0) {
-            await client.query('ROLLBACK');
-            return res.status(404).json({ message: 'Failed to create meals' 
-            });
-        }
+        const hospedagem = await createHospedagemForHospede(client, {
+            anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id,
+            almoco, janta, observacoes: trimmedObservacoes,
+        });
 
         await client.query('COMMIT');
 
-        return res.status(201).json({ 
-            message: 'Accommodation created successfully', 
-            data: result.rows[0]
+        return res.status(201).json({
+            message: 'Accommodation created successfully',
+            data: hospedagem
         });
     } catch (error) {
+        await client.query('ROLLBACK');
         console.error(error);
-        return res.status(500).json({ 
-            message: 'Failed to create accommodation' 
+        return res.status(500).json({
+            message: 'Failed to create accommodation'
         });
     } finally {
         await client.release();
@@ -2084,5 +2043,204 @@ export async function sendEmailToAllUsersController(req, res) {
         return res.status(500).json({
             message: 'Failed to send welcome email to all users'
         });
+    }
+}
+
+// ===== Pré-reservas (Google Forms intake) =====
+
+// Lista pré-reservas não validadas, filtradas por data_entrada no range.
+// query: ?from=YYYY-MM-DD&to=YYYY-MM-DD
+export async function getPreReservas(req, res) {
+    const { from, to } = req.query;
+    try {
+        const result = await pool.query(
+            `SELECT id, nome_solicitante, data_entrada, data_saida
+             FROM pre_reserva
+             WHERE status = 'nao_validada'
+               AND ($1::date IS NULL OR data_entrada >= $1::date)
+               AND ($2::date IS NULL OR data_entrada <= $2::date)
+             ORDER BY data_entrada ASC`,
+            [from || null, to || null]
+        );
+        return res.status(200).json({ data: result.rows });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Failed to fetch pre-reservas' });
+    }
+}
+
+// Detalhe completo de uma pré-reserva (para a tela de validação).
+export async function getPreReserva(req, res) {
+    const { id } = req.params;
+    try {
+        const result = await pool.query(`SELECT * FROM pre_reserva WHERE id = $1`, [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Pré-reserva não encontrada' });
+        }
+        return res.status(200).json({ data: result.rows[0] });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Failed to fetch pre-reserva' });
+    }
+}
+
+// Valida a pré-reserva: cria N hospede + N hospedagem + refeicoes (1 quarto/anfitrião).
+// body: { quarto_id, anfitriao_id, almoco, janta, hospedes? }
+// hospedes (opcional) sobrescreve o jsonb salvo (edições do admin na tela).
+export async function validatePreReserva(req, res) {
+    const { id } = req.params;
+    const { quarto_id, anfitriao_id, almoco, janta, hospedes } = req.body;
+
+    if (!quarto_id || !anfitriao_id) {
+        return res.status(400).json({ message: 'quarto_id e anfitriao_id são obrigatórios' });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        const pr = await client.query(
+            `SELECT * FROM pre_reserva WHERE id = $1 FOR UPDATE`, [id]
+        );
+        if (pr.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ message: 'Pré-reserva não encontrada' });
+        }
+        const preReserva = pr.rows[0];
+        if (preReserva.status === 'validada') {
+            await client.query('ROLLBACK');
+            return res.status(409).json({ message: 'Pré-reserva já validada' });
+        }
+
+        const lista = Array.isArray(hospedes) && hospedes.length > 0
+            ? hospedes
+            : preReserva.hospedes;
+        if (!Array.isArray(lista) || lista.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ message: 'Nenhum hóspede para validar' });
+        }
+
+        const criadas = [];
+        for (const h of lista) {
+            const nome = String(h?.nome ?? '').trim().slice(0, 100);
+            if (!nome) continue;
+            const idade = Number.isInteger(h?.idade) ? h.idade : null;
+
+            const hospedeResult = await client.query(
+                `INSERT INTO hospede (nome, idade, observacoes) VALUES ($1, $2, $3) RETURNING id`,
+                [nome, idade, preReserva.restricao_alimentar]
+            );
+            const hospede_id = hospedeResult.rows[0].id;
+
+            const hosp = await createHospedagemForHospede(client, {
+                anfitriao_id,
+                hospede_id,
+                data_chegada: preReserva.data_entrada,
+                data_saida: preReserva.data_saida,
+                quarto_id,
+                almoco,
+                janta,
+                observacoes: preReserva.restricao_alimentar,
+            });
+            criadas.push(hosp);
+        }
+
+        if (criadas.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ message: 'Nenhum hóspede válido' });
+        }
+
+        await client.query(
+            `UPDATE pre_reserva SET status = 'validada', validada_em = now() WHERE id = $1`,
+            [id]
+        );
+
+        await client.query('COMMIT');
+        return res.status(200).json({
+            message: 'Pré-reserva validada',
+            data: { count: criadas.length, hospedagens: criadas }
+        });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error(error);
+        return res.status(500).json({ message: 'Falha ao validar pré-reserva' });
+    } finally {
+        await client.release();
+    }
+}
+
+// Exclui uma pré-reserva (spam / órfã).
+export async function deletePreReserva(req, res) {
+    const { id } = req.params;
+    try {
+        const result = await pool.query(`DELETE FROM pre_reserva WHERE id = $1`, [id]);
+        if (result.rowCount === 0) {
+            return res.status(404).json({ message: 'Pré-reserva não encontrada' });
+        }
+        return res.status(200).json({ message: 'Pré-reserva excluída' });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Failed to delete pre-reserva' });
+    }
+}
+
+// Criação manual de reserva em grupo (sem pré-reserva de origem).
+// body: { anfitriao_id, quarto_id, data_chegada, data_saida, almoco, janta, hospedes:[{nome,idade}] }
+export async function createAccommodationGroup(req, res) {
+    const { anfitriao_id, quarto_id, data_chegada, data_saida, almoco, janta, hospedes } = req.body;
+
+    if (!anfitriao_id || !quarto_id || !data_chegada || !data_saida) {
+        return res.status(400).json({ message: 'anfitriao_id, quarto_id, data_chegada, data_saida são obrigatórios' });
+    }
+    if (!Array.isArray(hospedes) || hospedes.length === 0) {
+        return res.status(400).json({ message: 'Lista de hóspedes obrigatória' });
+    }
+    if (data_chegada > data_saida) {
+        return res.status(400).json({ message: 'Data de chegada deve ser antes da saída' });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        const criadas = [];
+        for (const h of hospedes) {
+            const nome = String(h?.nome ?? '').trim().slice(0, 100);
+            if (!nome) continue;
+            const idade = Number.isInteger(h?.idade) ? h.idade : null;
+
+            const hospedeResult = await client.query(
+                `INSERT INTO hospede (nome, idade) VALUES ($1, $2) RETURNING id`,
+                [nome, idade]
+            );
+            const hosp = await createHospedagemForHospede(client, {
+                anfitriao_id,
+                hospede_id: hospedeResult.rows[0].id,
+                data_chegada,
+                data_saida,
+                quarto_id,
+                almoco,
+                janta,
+                observacoes: null,
+            });
+            criadas.push(hosp);
+        }
+
+        if (criadas.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ message: 'Nenhum hóspede válido' });
+        }
+
+        await client.query('COMMIT');
+        return res.status(201).json({
+            message: 'Reserva em grupo criada',
+            data: { count: criadas.length, hospedagens: criadas }
+        });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error(error);
+        return res.status(500).json({ message: 'Falha ao criar reserva em grupo' });
+    } finally {
+        await client.release();
     }
 }

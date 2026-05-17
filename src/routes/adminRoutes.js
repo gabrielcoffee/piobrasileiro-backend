@@ -17,6 +17,11 @@ import {
   getAccommodations,
   getAccommodation,
   createAccommodation,
+  createAccommodationGroup,
+  getPreReservas,
+  getPreReserva,
+  validatePreReserva,
+  deletePreReserva,
   updateAccommodation,
   deleteAccommodation,
   getRooms,
@@ -87,8 +92,15 @@ router.put('/guestmeals/:mealId', authMiddleware, adminMiddleware, editGuestMeal
 router.post('/accommodations/data', authMiddleware, adminMiddleware, getAccommodations);
 router.get('/accommodations/:accommodationId', authMiddleware, adminMiddleware, getAccommodation);
 router.post('/accommodations', authMiddleware, adminMiddleware, createAccommodation);
+router.post('/accommodations/group', authMiddleware, adminMiddleware, createAccommodationGroup);
 router.put('/accommodations/:accommodationId', authMiddleware, adminMiddleware, updateAccommodation);
 router.delete('/accommodations/:accommodationId', authMiddleware, adminMiddleware, deleteAccommodation);
+
+// Pré-reservas (Google Forms intake → validação)
+router.get('/pre-reservas', authMiddleware, adminMiddleware, getPreReservas);
+router.get('/pre-reservas/:id', authMiddleware, adminMiddleware, getPreReserva);
+router.post('/pre-reservas/:id/validate', authMiddleware, adminMiddleware, validatePreReserva);
+router.delete('/pre-reservas/:id', authMiddleware, adminMiddleware, deletePreReserva);
 
 // CRUD for quarto
 router.post('/rooms', authMiddleware, adminMiddleware, getRooms);

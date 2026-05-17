@@ -1,146 +1,184 @@
--- Tipos ENUM
+-- Pio Brasileiro — database schema (aligned with production).
+-- Run on a fresh PostgreSQL database:
+--   psql <dbname> < generate.sql
+-- Requires a superuser/role allowed to CREATE EXTENSION.
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- ===== ENUM types =====
 CREATE TYPE genero_enum AS ENUM ('m', 'f');
 CREATE TYPE tipo_usuario_enum AS ENUM ('admin', 'comum');
 CREATE TYPE tipo_documento_enum AS ENUM ('cpf', 'id_internacional');
 CREATE TYPE status_hospedagem_enum AS ENUM ('prevista', 'ativa', 'encerrada');
 CREATE TYPE refeicao_tipo_enum AS ENUM ('usuario', 'hospede', 'convidado');
+CREATE TYPE refeicao_pref_enum AS ENUM ('apenas_cafe', 'cafe_almoco', 'cafe_janta', 'cafe_almoco_janta', 'decidir_depois');
+CREATE TYPE forma_pagamento_enum AS ENUM ('wise', 'dinheiro');
+CREATE TYPE pre_reserva_status_enum AS ENUM ('nao_validada', 'validada');
 
--- Extensão para geração de UUIDs aleatórios
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-
--- Tabela de autenticação de usuário
+-- ===== Tables =====
 CREATE TABLE user_auth (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email VARCHAR(320) UNIQUE NOT NULL,
-  password varchar(255) NOT NULL,
-  tipo_usuario tipo_usuario_enum default 'comum',
-  active boolean default true,
-  criado_em TIMESTAMP DEFAULT now(),
-  -- Constraints
-  constraint valid_email CHECK (email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+    id           uuid              DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    email        varchar(320)      NOT NULL UNIQUE
+        CONSTRAINT valid_email
+            CHECK ((email)::text ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'::text),
+    password     varchar(255)      NOT NULL,
+    tipo_usuario tipo_usuario_enum DEFAULT 'comum'::tipo_usuario_enum,
+    active       boolean           DEFAULT true,
+    criado_em    timestamp         DEFAULT now()
 );
 
--- Tabela de perfis
 CREATE TABLE perfil (
-  user_id UUID PRIMARY KEY REFERENCES user_auth(id) ON DELETE CASCADE,
-  nome_completo VARCHAR(100) NOT NULL,
-  data_nasc DATE,
-  genero genero_enum,
-  funcao varchar(100),
-  num_documento VARCHAR(20),
-  tipo_documento tipo_documento_enum,
-  avatar_image_data BYTEA,
-  observacoes VARCHAR(255),
-  criado_em TIMESTAMP DEFAULT now()
+    user_id           uuid         NOT NULL PRIMARY KEY
+        REFERENCES user_auth ON DELETE CASCADE,
+    nome_completo     varchar(100) NOT NULL,
+    data_nasc         date,
+    genero            genero_enum,
+    funcao            varchar(100),
+    num_documento     varchar(20),
+    tipo_documento    tipo_documento_enum,
+    avatar_image_data bytea,
+    observacoes       varchar(255),
+    criado_em         timestamp DEFAULT now()
 );
 
 CREATE TABLE solicitacao (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    nome varchar(100) not null,
-    num_telefone varchar(20) not null,
-    email varchar(200) not null,
-    data_chegada DATE NOT NULL,
-    data_saida DATE NOT NULL,
-    num_pessoas int not null,
-    nacionalidade varchar(100) not null,
-    quantidade_adultos int not null,
-    quantidade_criancas int not null,
-    voce_e_padre boolean default false,
-    visualizada boolean default false,
-    criado_em TIMESTAMP DEFAULT now()
+    id                  uuid         DEFAULT gen_random_uuid()     NOT NULL PRIMARY KEY,
+    nome                varchar(100)                               NOT NULL,
+    telefone            varchar(20)                                NOT NULL,
+    email               varchar(200)                               NOT NULL,
+    data_chegada        date                                       NOT NULL,
+    data_saida          date                                       NOT NULL,
+    num_pessoas         integer                                    NOT NULL,
+    visualizada         boolean      DEFAULT false,
+    criado_em           timestamp    DEFAULT now(),
+    nacionalidade       varchar(100) DEFAULT ''::character varying NOT NULL,
+    quantidade_adultos  integer      DEFAULT 0                     NOT NULL,
+    quantidade_criancas integer      DEFAULT 0                     NOT NULL,
+    voce_e_padre        boolean      DEFAULT false                 NOT NULL
 );
 
 CREATE TABLE quarto (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    numero varchar(25) not null,
-    capacidade INT not null,
-    active boolean default true
+    id         uuid    DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    numero     varchar(25)                       NOT NULL,
+    capacidade integer                           NOT NULL,
+    active     boolean DEFAULT true
 );
 
 CREATE TABLE hospede (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    nome varchar(100) not null,
-    genero genero_enum,
+    id             uuid      DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    nome           varchar(100)                        NOT NULL,
+    genero         genero_enum,
     tipo_documento tipo_documento_enum,
-    num_documento varchar(20),
-    funcao varchar(100),
-    origem varchar(100),
-    observacoes VARCHAR(255),
-    criado_em TIMESTAMP DEFAULT now()
+    num_documento  varchar(20),
+    funcao         varchar(100),
+    origem         varchar(100),
+    observacoes    varchar(255),
+    idade          smallint,
+    criado_em      timestamp DEFAULT now()
 );
 
--- Tabela de hospedagem
 CREATE TABLE hospedagem (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    anfitriao_id UUID not null references perfil(user_id) ON DELETE CASCADE,
-    hospede_id UUID NOT NULL REFERENCES hospede(id) ON DELETE CASCADE,
-    data_chegada DATE NOT NULL,
-    data_saida DATE NOT NULL,
-    quarto_id UUID NOT NULL REFERENCES quarto(id) ON DELETE CASCADE,
-    almoco boolean default false,
-    janta boolean default false,
-    criado_em TIMESTAMP DEFAULT now()
+    id           uuid      DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    anfitriao_id uuid                                NOT NULL
+        REFERENCES perfil ON DELETE CASCADE,
+    hospede_id   uuid                                NOT NULL
+        REFERENCES hospede ON DELETE CASCADE,
+    data_chegada date                                NOT NULL,
+    data_saida   date                                NOT NULL,
+    quarto_id    uuid                                NOT NULL
+        REFERENCES quarto ON DELETE CASCADE,
+    criado_em    timestamp DEFAULT now(),
+    almoco       boolean   DEFAULT false,
+    janta        boolean   DEFAULT false
 );
 
--- Tabela de convidados
 CREATE TABLE convidado (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    anfitriao_id UUID REFERENCES perfil(user_id) ON DELETE CASCADE,
-    nome VARCHAR(100) NOT NULL,
-    funcao VARCHAR(50),
-    origem VARCHAR(100),
-    observacoes VARCHAR(255),
-    criado_em TIMESTAMP DEFAULT now()
+    id           uuid      DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    anfitriao_id uuid
+        REFERENCES perfil ON DELETE CASCADE,
+    nome         varchar(100)                        NOT NULL,
+    funcao       varchar(50),
+    origem       varchar(100),
+    observacoes  varchar(255),
+    criado_em    timestamp DEFAULT now()
 );
 
--- Tabela de refeição
 CREATE TABLE refeicao (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    -- Tipo de pessoa que vai comer a refeicao
-    tipo_pessoa refeicao_tipo_enum NOT NULL,
-    usuario_id UUID REFERENCES perfil(user_id) ON DELETE CASCADE,
-    hospede_id UUID REFERENCES hospede(id) ON DELETE CASCADE,
-    convidado_id UUID REFERENCES convidado(id) ON DELETE CASCADE,
-
-    data DATE NOT NULL,
-    almoco_colegio BOOLEAN DEFAULT false,
-    almoco_levar BOOLEAN DEFAULT false,
-    janta_colegio BOOLEAN DEFAULT false,
-    criado_em TIMESTAMP DEFAULT now(),
-
-    -- Constraints baseadas no tipo de pessoa
-    CHECK (
-        (tipo_pessoa = 'usuario' AND usuario_id IS NOT NULL AND hospede_id IS NULL AND convidado_id IS NULL) OR
-        (tipo_pessoa = 'hospede' AND usuario_id IS NULL AND hospede_id IS NOT NULL AND convidado_id IS NULL) OR
-        (tipo_pessoa = 'convidado' AND usuario_id IS NULL AND hospede_id IS NULL AND convidado_id IS NOT NULL)
+    id             uuid      DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    tipo_pessoa    refeicao_tipo_enum                  NOT NULL,
+    usuario_id     uuid REFERENCES perfil    ON DELETE CASCADE,
+    hospede_id     uuid REFERENCES hospede   ON DELETE CASCADE,
+    convidado_id   uuid REFERENCES convidado ON DELETE CASCADE,
+    data           date                                NOT NULL,
+    almoco_colegio boolean   DEFAULT false,
+    almoco_levar   boolean   DEFAULT false,
+    janta_colegio  boolean   DEFAULT false,
+    criado_em      timestamp DEFAULT now(),
+    CONSTRAINT unique_user_date UNIQUE (usuario_id, data),
+    CONSTRAINT refeicao_check CHECK (
+        ((tipo_pessoa = 'usuario'::refeicao_tipo_enum)   AND (usuario_id IS NOT NULL) AND (hospede_id IS NULL)     AND (convidado_id IS NULL)) OR
+        ((tipo_pessoa = 'hospede'::refeicao_tipo_enum)   AND (usuario_id IS NULL)     AND (hospede_id IS NOT NULL) AND (convidado_id IS NULL)) OR
+        ((tipo_pessoa = 'convidado'::refeicao_tipo_enum) AND (usuario_id IS NULL)     AND (hospede_id IS NULL)     AND (convidado_id IS NOT NULL))
     )
 );
 
 CREATE TABLE password_reset (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES user_auth(id) ON DELETE CASCADE,
-    token_hash VARCHAR(255) NOT NULL,
-    expires_at TIMESTAMP DEFAULT now() + INTERVAL '1 hour'
-    created_at TIMESTAMP DEFAULT now(),
-)
-
--- Function to manage occupied room dates
-drop function manage_quarto_ocupado;
-
--- Triggers
-CREATE TRIGGER hospedagem_ocupado_trigger
-    AFTER INSERT OR UPDATE OR DELETE ON hospedagem
-    FOR EACH ROW
-    EXECUTE FUNCTION manage_quarto_ocupado();
-
-
--- Constraints
-ALTER TABLE refeicao ADD CONSTRAINT unique_user_date UNIQUE(usuario_id, data);
-
-create table datas_refeicao_bloqueadas  (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    data DATE NOT NULL,
-    criado_em TIMESTAMP DEFAULT now()
+    id         uuid      DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    user_id    uuid REFERENCES user_auth ON DELETE CASCADE,
+    token_hash varchar(255)                        NOT NULL,
+    expires_at timestamp DEFAULT (now() + '01:00:00'::interval),
+    created_at timestamp DEFAULT now()
 );
 
-ALTER TABLE datas_refeicao_bloqueadas ADD CONSTRAINT unique_blocked_date UNIQUE(data);
+CREATE TABLE datas_refeicao_bloqueadas (
+    id        uuid      DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    data      date                                NOT NULL
+        CONSTRAINT unique_blocked_date UNIQUE,
+    criado_em timestamp DEFAULT now()
+);
+
+-- Pré-reserva: intake do Google Forms. Vira hospedagem(s) na validação.
+CREATE TABLE pre_reserva (
+    id                  uuid      DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    solicitacao_id      uuid      REFERENCES solicitacao(id) ON DELETE SET NULL,
+    email               varchar(320)                        NOT NULL,
+    nome_solicitante    varchar(100)                        NOT NULL,
+    data_entrada        date                                NOT NULL,
+    data_saida          date                                NOT NULL,
+    horario_chegada     time,
+    restricao_alimentar text,
+    refeicoes           refeicao_pref_enum                  NOT NULL,
+    forma_pagamento     forma_pagamento_enum                NOT NULL,
+    observacao          text,
+    hospedes            jsonb     NOT NULL DEFAULT '[]',
+    hospedes_raw        text                                NOT NULL,
+    status              pre_reserva_status_enum NOT NULL DEFAULT 'nao_validada',
+    validada_em         timestamp,
+    criado_em           timestamp DEFAULT now(),
+    CONSTRAINT pre_reserva_datas_check CHECK (data_entrada <= data_saida)
+);
+
+-- ===== Functions =====
+-- Removes a refeicao row when both meal flags are false on insert/update.
+-- Usage: fires automatically via refeicao_cleanup_trigger below; not called directly.
+CREATE FUNCTION refeicao_cleanup() RETURNS trigger
+    LANGUAGE plpgsql
+AS $$
+BEGIN
+  -- if both meals are false, remove the row
+  IF NEW.almoco_colegio = false AND NEW.janta_colegio = false THEN
+    DELETE FROM refeicao
+    WHERE usuario_id = NEW.usuario_id
+      AND data = NEW.data;
+    RETURN NULL; -- prevents the row from being inserted/updated
+  END IF;
+  RETURN NEW; -- keep the row
+END;
+$$;
+
+-- ===== Triggers =====
+CREATE TRIGGER refeicao_cleanup_trigger
+    AFTER INSERT OR UPDATE
+    ON refeicao
+    FOR EACH ROW
+EXECUTE PROCEDURE refeicao_cleanup();

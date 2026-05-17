@@ -136,3 +136,50 @@ export const getListOfDatesFromCheckInToCheckOut = (data_chegada, data_saida) =>
 export function generateResetToken() {
     return crypto.randomBytes(32).toString("hex"); // secure random token
   }
+
+// Canonical "1 hospedagem + observacoes do hospede + N refeicao (por dia)".
+// Roda numa transação JÁ ABERTA do chamador (client). NÃO faz BEGIN/COMMIT/
+// ROLLBACK/release — quem chama controla a transação. Lança Error em falha.
+// Usado por createAccommodation (1x), validatePreReserva e createAccommodationGroup (Nx).
+// Café da manhã não existe no sistema: só almoco/janta viram refeicao.
+//
+// uso: const hosp = await createHospedagemForHospede(client, {
+//   anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id,
+//   almoco, janta, observacoes });
+export async function createHospedagemForHospede(client, {
+    anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id,
+    almoco, janta, observacoes,
+}) {
+    const hospResult = await client.query(
+        `INSERT INTO hospedagem (anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, janta)
+         VALUES ($1, $2, $3, $4, $5, COALESCE($6, false), COALESCE($7, false))
+         RETURNING *`,
+        [anfitriao_id, hospede_id, data_chegada, data_saida, quarto_id, almoco, janta]
+    );
+    if (hospResult.rows.length === 0) {
+        throw new Error('Failed to create hospedagem');
+    }
+
+    const obsResult = await client.query(
+        `UPDATE hospede SET observacoes = $1 WHERE id = $2`,
+        [observacoes?.trim() ?? null, hospede_id]
+    );
+    if (obsResult.rowCount === 0) {
+        throw new Error('Failed to update hospede observacoes');
+    }
+
+    const dates = getListOfDatesFromCheckInToCheckOut(data_chegada, data_saida);
+    const mealResult = await client.query(
+        `INSERT INTO refeicao (tipo_pessoa, hospede_id, data, almoco_colegio, janta_colegio)
+         SELECT 'hospede' as tipo_pessoa, $1 as hospede_id, date_value as data,
+                $3 as almoco_colegio, $4 as janta_colegio
+         FROM unnest($2::date[]) as date_value
+         RETURNING *`,
+        [hospede_id, dates, almoco, janta]
+    );
+    if (mealResult.rowCount === 0) {
+        throw new Error('Failed to create meals');
+    }
+
+    return hospResult.rows[0];
+}
